@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://media.forgecdn.net/avatars/thumbnails/2055/200/256/256/639253507976439242.jpg" width="160" alt="MyXPBar Forever logo">
+<img src="Media/logo.png" width="220" alt="MyXPBar Forever logo">
 
 # MyXPBar Forever
 
