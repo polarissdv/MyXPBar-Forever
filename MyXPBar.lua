@@ -22,6 +22,8 @@ ns.defaults = {
     smooth = true,     -- Animated bar fill
     showGains = true,  -- Floating "+245 XP"
     style = "classic", -- classic | gold | segments | thin | spark | restedbar
+    fullWidth = false,   -- Stretch from one screen edge to the other (width is ignored)
+    showRepHover = true, -- Mouse over the bar: tracked reputation
     point = { "CENTER", "CENTER", 0, -200 },
     showMinimap = true,
     minimap = { angle = 225 },
@@ -163,6 +165,8 @@ mainFrame:SetScript("OnDragStop", function(self)
     self:SetUserPlaced(false) -- Position is kept in our own settings
     local point, _, relPoint, x, y = self:GetPoint(1)
     ns.db.point = { point, relPoint, x, y }
+    -- Full width: only the height changes, the sides snap back to the screen edges
+    if ns.db.fullWidth then ns.ApplyLayout() end
 end)
 
 -- Black Background
@@ -267,6 +271,97 @@ local function UpdateSpark(fraction)
 end
 
 -- =========================================================
+-- REPUTATION ON HOVER
+-- =========================================================
+-- Covers the XP bar while the mouse is over it
+local repBar = CreateFrame("StatusBar", nil, mainFrame)
+repBar:SetAllPoints(xpBar)
+repBar:SetStatusBarTexture(BAR_TEXTURE)
+repBar:SetFrameLevel(xpBar:GetFrameLevel() + 3)
+repBar:Hide()
+
+local repBg = repBar:CreateTexture(nil, "BACKGROUND")
+repBg:SetAllPoints()
+repBg:SetColorTexture(0, 0, 0, 1) -- Opaque: the XP bar must not show through
+
+local repName = repBar:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+repName:SetTextColor(1, 1, 1)
+local repValue = repBar:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+repValue:SetTextColor(1, 1, 1)
+local repStanding = repBar:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+repStanding:SetTextColor(1, 1, 1)
+
+-- name, standing (1-8), bar min, bar max, value, or nil when nothing is tracked
+local function GetWatchedReputation()
+    if C_Reputation and C_Reputation.GetWatchedFactionData then
+        local data = C_Reputation.GetWatchedFactionData()
+        if data and data.name then
+            return data.name, data.reaction, data.currentReactionThreshold,
+                data.nextReactionThreshold, data.currentStanding
+        end
+        return nil
+    end
+    if GetWatchedFactionInfo then
+        local name, standing, barMin, barMax, value = GetWatchedFactionInfo()
+        if name then return name, standing, barMin, barMax, value end
+    end
+    return nil
+end
+
+-- Returns false when no reputation is tracked
+local function UpdateRepBar()
+    local name, standing, barMin, barMax, value = GetWatchedReputation()
+    if not name then return false end
+    local max = math.max(barMax - barMin, 1)
+    local current = math.max(value - barMin, 0)
+    repBar:SetMinMaxValues(0, max)
+    repBar:SetValue(current)
+
+    local color = FACTION_BAR_COLORS and FACTION_BAR_COLORS[standing]
+    if color then
+        repBar:SetStatusBarColor(color.r, color.g, color.b, 1)
+    else
+        repBar:SetStatusBarColor(0, 0.6, 0.1, 1)
+    end
+    repName:SetText(name)
+    repValue:SetText(FormatNumber(current) .. " / " .. FormatNumber(max))
+    local label = _G["FACTION_STANDING_LABEL" .. tostring(standing)] or ""
+    repStanding:SetText(string.format("%s  %.1f%%", label, current / max * 100))
+    return true
+end
+
+local function SetXPTextsShown(show)
+    levelText:SetShown(show)
+    valueText:SetShown(show)
+    pctText:SetShown(show)
+end
+
+local function ShowReputation()
+    if not ns.db.showRepHover then return end
+    if UpdateRepBar() then
+        repBar:Show()
+        SetXPTextsShown(false)
+    else
+        GameTooltip:SetOwner(mainFrame, "ANCHOR_TOP")
+        GameTooltip:SetText(ns.T("REP_NONE"))
+        GameTooltip:AddLine(ns.T("REP_NONE_DESC"), 1, 1, 1, true)
+        GameTooltip:Show()
+    end
+end
+
+local function HideReputation()
+    if repBar:IsShown() then
+        repBar:Hide()
+        SetXPTextsShown(ns.db.showText)
+    end
+    if GameTooltip:IsOwned(mainFrame) then GameTooltip:Hide() end
+end
+
+mainFrame:SetScript("OnEnter", ShowReputation)
+mainFrame:SetScript("OnLeave", HideReputation)
+mainFrame:HookScript("OnDragStart", HideReputation)
+
+-- =========================================================
 -- APPLY SETTINGS
 -- =========================================================
 function ns.ApplyLayout()
@@ -277,6 +372,19 @@ function ns.ApplyLayout()
     local p = db.point
     mainFrame:ClearAllPoints()
     mainFrame:SetPoint(p[1], UIParent, p[2], p[3], p[4])
+
+    -- Full width: keep the saved height on screen, pin both sides to the
+    -- screen edges (follows resolution and UI scale changes by itself)
+    local width = db.width
+    if db.fullWidth then
+        local bottom = mainFrame:GetBottom()
+        if bottom then
+            mainFrame:ClearAllPoints()
+            mainFrame:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", 0, bottom)
+            mainFrame:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", 0, bottom)
+        end
+        width = UIParent:GetWidth()
+    end
 
     -- Bar geometry: thin keeps a slim bar at the bottom, gold insets it for the frame
     xpBar:ClearAllPoints()
@@ -329,7 +437,7 @@ function ns.ApplyLayout()
         gloss:SetHeight(math.max(db.height / 2 - 2, 2))
     end
 
-    local barWidth = (style == "gold") and (db.width - 4) or db.width
+    local barWidth = (style == "gold") and (width - 4) or width
     for i, seg in ipairs(segments) do
         seg:SetShown(style == "segments")
         if style == "segments" then
@@ -355,9 +463,15 @@ function ns.ApplyLayout()
         subText:SetPoint("TOP", mainFrame, "BOTTOM", 0, -5)
     end
 
-    levelText:SetShown(db.showText)
-    valueText:SetShown(db.showText)
-    pctText:SetShown(db.showText)
+    -- Reputation texts sit exactly where the XP texts are
+    repName:ClearAllPoints()
+    repName:SetPoint(levelText:GetPoint())
+    repValue:ClearAllPoints()
+    repValue:SetPoint(valueText:GetPoint())
+    repStanding:ClearAllPoints()
+    repStanding:SetPoint(pctText:GetPoint())
+
+    SetXPTextsShown(db.showText and not repBar:IsShown())
     subText:SetShown(db.showRestedText)
 end
 
@@ -595,6 +709,7 @@ local SETTINGS_VERSION = "1"
 local FLAG_FIELDS = {
     "locked", "hideBlizzard", "playSound", "showText",
     "showRestedText", "smooth", "showGains", "showMinimap",
+    "fullWidth", "showRepHover", -- 2.7: missing in older copies, defaults apply
 }
 
 local function ColorToHex(c)
@@ -677,6 +792,9 @@ eventFrame:RegisterEvent("UPDATE_EXHAUSTION")
 eventFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
 eventFrame:RegisterEvent("ENABLE_XP_GAIN")
 eventFrame:RegisterEvent("DISABLE_XP_GAIN")
+eventFrame:RegisterEvent("UPDATE_FACTION")
+eventFrame:RegisterEvent("DISPLAY_SIZE_CHANGED")
+eventFrame:RegisterEvent("UI_SCALE_CHANGED")
 
 eventFrame:SetScript("OnEvent", function(self, event, arg1)
     if event == "ADDON_LOADED" then
@@ -703,6 +821,13 @@ eventFrame:SetScript("OnEvent", function(self, event, arg1)
         lastXP = UnitXP("player")
         lastLevel = UnitLevel("player")
         RequestUpdate(true) -- No animation on login
+        return
+    elseif event == "UPDATE_FACTION" then
+        if repBar:IsShown() and not UpdateRepBar() then HideReputation() end
+        return
+    elseif event == "DISPLAY_SIZE_CHANGED" or event == "UI_SCALE_CHANGED" then
+        -- Full width segments are placed from the bar width
+        if ns.db.fullWidth then ns.ApplyLayout() end
         return
     elseif event == "PLAYER_REGEN_ENABLED" then
         -- Finish hiding the Blizzard bar that was faded out during combat

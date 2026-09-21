@@ -1,5 +1,15 @@
 # MyXPBar - Changelog
 
+## 2.7
+- The width slider now goes up to the width of your screen (it stopped at
+  1400 px).
+- New "Full screen width" option: the bar runs from one edge of the screen
+  to the other, at any resolution and UI scale. Move it up or down with
+  Shift + drag as usual.
+- New "Reputation on hover" option (on by default): mouse over the bar to
+  see your tracked reputation (faction, standing, progress). If no faction
+  is tracked, a tooltip explains how to pick one.
+
 ## 2.6
 - Fixed: position, size, colors, style and options were reset after closing
   and restarting the game. The Forever beta never writes the CVar backup to

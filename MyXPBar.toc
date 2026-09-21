@@ -2,7 +2,7 @@
 ## Title: MyXPBar
 ## Notes: Lightweight XP Bar inspired by Luxthos - replaces the default Blizzard XP bar
 ## Author: Polarz141
-## Version: 2.6
+## Version: 2.7
 ## SavedVariables: MyXPBarDB
 ## IconTexture: Interface\AddOns\MyXPBar\Media\icon
 ## AddonCompartmentFunc: MyXPBar_OnAddonCompartmentClick

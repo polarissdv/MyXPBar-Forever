@@ -4,7 +4,7 @@ local T = ns.T
 -- =========================================================
 -- STYLE (native WoW look)
 -- =========================================================
-local VERSION = "2.6"
+local VERSION = "2.7"
 local PANEL_WIDTH = 420
 local PAD = 26
 local CONTENT_W = PANEL_WIDTH - PAD * 2
@@ -224,7 +224,9 @@ local function CreateSlider(key, minV, maxV, step, getValue, setValue, formatVal
     slider:SetOrientation("HORIZONTAL")
     slider:SetSize(CONTENT_W, 18)
     slider:SetPoint("TOPLEFT", 0, -20)
-    slider:SetMinMaxValues(minV, maxV)
+    -- maxV can be a function, for limits that depend on the screen
+    local function Max() return type(maxV) == "function" and maxV() or maxV end
+    slider:SetMinMaxValues(minV, Max())
     slider:SetValueStep(step)
     if slider.SetObeyStepDuringDrag then slider:SetObeyStepDuringDrag(true) end
     slider:SetHitRectInsets(0, 0, -4, -4)
@@ -270,6 +272,7 @@ local function CreateSlider(key, minV, maxV, step, getValue, setValue, formatVal
 
     tinsert(refreshers, function()
         updating = true
+        slider:SetMinMaxValues(minV, Max())
         slider:SetValue(getValue())
         valueText:SetText(formatValue(getValue()))
         updating = false
@@ -585,7 +588,8 @@ tinsert(refreshers, function()
 end)
 
 Section("SECTION_SIZE")
-CreateSlider("WIDTH", 200, 1400, 10,
+-- Up to the width of the screen (in UI units, so it matches any resolution and UI scale)
+CreateSlider("WIDTH", 200, function() return math.max(1400, math.floor(UIParent:GetWidth() / 10 + 0.5) * 10) end, 10,
     function() return ns.db.width end,
     function(v) ns.db.width = v; ns.Refresh() end,
     function(v) return v .. " px" end)
@@ -611,6 +615,8 @@ OptionCheck("SHOW_RESTED", "SHOW_RESTED_DESC", "showRestedText")
 OptionCheck("SMOOTH", "SMOOTH_DESC", "smooth")
 OptionCheck("SHOW_GAINS", "SHOW_GAINS_DESC", "showGains")
 OptionCheck("MINIMAP", "MINIMAP_DESC", "showMinimap", function() ns.UpdateMinimapButton() end)
+OptionCheck("FULL_WIDTH", "FULL_WIDTH_DESC", "fullWidth")
+OptionCheck("REP_HOVER", "REP_HOVER_DESC", "showRepHover")
 cursorY = cursorY - 34
 
 -- Language (FR | EN)
