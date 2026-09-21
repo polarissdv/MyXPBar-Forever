@@ -7,7 +7,7 @@
 **A clean, lightweight and fully customizable XP bar for World of Warcraft: Forever.**
 
 [![CurseForge](https://img.shields.io/badge/CurseForge-MyXPBar%20Forever-F16436?logo=curseforge&logoColor=white)](https://www.curseforge.com/wow/addons/myxpbar-forever)
-![Version](https://img.shields.io/badge/version-2.5-9966ff)
+![Version](https://img.shields.io/badge/version-2.6-9966ff)
 ![Interface](https://img.shields.io/badge/WoW%3A%20Forever-1.60.x%20(16001)-c8a14a)
 
 </div>
@@ -33,8 +33,9 @@ World of Warcraft style. No libraries, no dependencies.
 - **Mobs-to-level estimate** — how many kills you still need, based on your last XP gain.
 - **Detailed stats** — level, current / max XP, percentage, and projected percentage with rested XP.
 - **English and French** — switch language in one click from the options menu.
-- **Settings that stick** — position, size, colors and options survive a reload or a relog, even
-  with the Forever beta bug that resets other addons (see below).
+- **Settings that stick** — position, size, colors, style and options survive a reload, a relog
+  and a full restart of the game, even with the Forever beta bug that resets other addons
+  (see below).
 - **Lightweight** — texts are only redrawn when they change, and nothing runs while the bar is
   hidden.
 
@@ -76,10 +77,19 @@ applied live.
 
 ## About the Forever beta saving bug
 
-During the WoW Forever beta, the client writes addon settings at logout but never reads them back,
-so every addon starts from defaults. MyXPBar mirrors its settings into addon-registered CVars, which
-the client does keep, and restores them at login. When Blizzard fixes the bug, the normal saved
-variables take over again — nothing to change.
+During the WoW Forever beta, the client writes addon settings at logout but never reads them back
+after a relog or a restart, so every addon starts from defaults. MyXPBar keeps two extra copies of
+its settings:
+
+- **Addon CVars** — they stay in memory while the game runs, which covers a relog. The client never
+  writes them to disk, so they are gone once the game is closed.
+- **One account macro named `MyXPBar`** — macros are stored by the server and are always there after
+  a restart. It holds a single line of settings (about 80 characters) and does nothing if you click
+  it. If you delete it, MyXPBar puts it back a few seconds later.
+
+At login, the most recent copy wins. When Blizzard fixes the bug, the normal saved variables take
+over again — nothing to change. The macro uses one of the 120 account macro slots; if they are all
+taken, a chat message tells you.
 
 ## Compatibility
 

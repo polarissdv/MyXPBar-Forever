@@ -4,20 +4,30 @@ local ADDON_NAME, ns = ...
 -- PERSIST: WoW Forever beta workaround
 -- =========================================================
 -- On the Forever beta, SavedVariables survive a /reload but are not read back
--- after a relog or a restart. The client does keep addon-registered CVars, so
--- every saved table is mirrored there too.
+-- after a relog or a restart. Two copies cover for it:
 --
--- The CVars are not available yet when the addon loads: the copy is read back
--- at login (several tries), and nothing is saved before that, so the copy is
--- never overwritten with default settings. Each save is dated (_savedAt) and
--- the most recent version wins.
+-- * Addon-registered CVars. They stay in memory while the game runs, so they
+--   cover a relog, but the client never writes them to disk: they are gone
+--   after a restart.
+-- * One account macro holding a compact copy of the settings. Macros are kept
+--   by the server and are always there after a restart. Only tables that give
+--   an encoder get one (a macro body holds 255 characters).
+--
+-- None of the copies are available yet when the addon loads: they are read
+-- back at login (several tries), and nothing is saved before that, so a copy
+-- is never overwritten with default settings. Each save is dated (_savedAt)
+-- and the most recent version wins.
 local Persist = {}
 ns.Persist = Persist
 
 local CHUNK = 200      -- Characters per CVar
 local MAX_CHUNKS = 60  -- Up to 12 000 characters per saved table
-local SAVE_EVERY = 20  -- Seconds
+local SAVE_EVERY = 5   -- Seconds
 local LAST_RESTORE_DELAY = 3 -- Seconds after entering the world
+local MACRO_WAIT = 15  -- Longest wait for the macros after entering the world
+local MACRO_BODY_MAX = 255
+local MACRO_ICON = 134400 -- Question mark
+local MACRO_DATA_PREFIX = "#d;"
 
 local function HasAPI()
     return C_CVar and C_CVar.RegisterCVar and C_CVar.GetCVar and C_CVar.SetCVar
@@ -181,11 +191,14 @@ end
 -- name: CVar name, or a function returning it (for per-character names)
 -- getter: returns the live table
 -- restore(saved): called when the saved copy is more recent than the live table
+-- macro (optional): { name = macro name, encode = fn(table) -> string,
+--                     decode = fn(string) -> table or nil }
 local entries = {}
-local ready = false -- No saving before the copies have been read back
+local ready = false       -- No saving before the copies have been read back
+local macrosLoaded = false -- The server sends the macros a moment after login
 
-function Persist.Register(name, getter, restore)
-    tinsert(entries, { name = name, getter = getter, restore = restore })
+function Persist.Register(name, getter, restore, macro)
+    tinsert(entries, { name = name, getter = getter, restore = restore, macro = macro })
 end
 
 local function ResolveName(entry)
@@ -193,14 +206,83 @@ local function ResolveName(entry)
     return entry.name
 end
 
+-- ---------------------------------------------------------
+-- Macro copy
+-- ---------------------------------------------------------
+local function MacroAPI()
+    return GetMacroIndexByName and GetMacroInfo and CreateMacro and EditMacro and GetNumMacros
+end
+
+local function MacrosAvailable()
+    if not MacroAPI() then return false end
+    return macrosLoaded or (GetNumMacros() or 0) > 0
+end
+
+-- Index of our macro among the account macros, or nil
+local function FindMacro(macroName)
+    local index = GetMacroIndexByName(macroName)
+    if index and index > 0 and index <= (MAX_ACCOUNT_MACROS or 120) then return index end
+    return nil
+end
+
+local function MacroBody(macroName, data)
+    return "#" .. macroName .. " settings, keep this macro\n" .. MACRO_DATA_PREFIX .. data
+end
+
+local function ReadMacro(spec)
+    if not MacrosAvailable() then return nil end
+    local index = FindMacro(spec.name)
+    if not index then return nil end
+    local _, _, body = GetMacroInfo(index)
+    local data = body and body:match(MACRO_DATA_PREFIX:gsub("%p", "%%%0") .. "([^\n]*)")
+    if not data then return nil end
+    local ok, tbl = pcall(spec.decode, data)
+    if ok and type(tbl) == "table" then return tbl end
+    return nil
+end
+
+local warnedFull = false
+
+-- Returns true once the macro holds exactly this data
+local function WriteMacro(spec, data)
+    if not MacrosAvailable() or InCombatLockdown() then return false end
+    local body = MacroBody(spec.name, data)
+    if #body > MACRO_BODY_MAX then return false end
+
+    local index = FindMacro(spec.name)
+    if index then
+        local _, _, current = GetMacroInfo(index)
+        if current == body then return true end
+        return (pcall(EditMacro, index, spec.name, nil, body))
+    end
+
+    if (GetNumMacros() or 0) >= (MAX_ACCOUNT_MACROS or 120) then
+        if not warnedFull then
+            warnedFull = true
+            DEFAULT_CHAT_FRAME:AddMessage("|cff9966ff" .. ADDON_NAME .. "|r: all account macro slots are used, "
+                .. "your settings will not survive a restart. Free one slot and /reload.")
+        end
+        return false
+    end
+    return (pcall(CreateMacro, spec.name, MACRO_ICON, body, false))
+end
+
+-- ---------------------------------------------------------
+-- Restore and save
+-- ---------------------------------------------------------
 local function TryRestore()
     for _, entry in ipairs(entries) do
         local live = entry.getter()
-        local saved = Persist.Load(ResolveName(entry))
-        if type(live) == "table" and saved then
+        if type(live) == "table" then
+            -- The newest copy wins, CVar or macro
+            local best = Persist.Load(ResolveName(entry))
+            local fromMacro = entry.macro and ReadMacro(entry.macro)
+            if fromMacro and (fromMacro._savedAt or 0) > ((best and best._savedAt) or 0) then
+                best = fromMacro
+            end
             -- Copies from older versions have no date: they win over a live table without date
-            if (saved._savedAt or 1) > (live._savedAt or 0) then
-                local ok = pcall(entry.restore, saved)
+            if best and (best._savedAt or 1) > (live._savedAt or 0) then
+                local ok = pcall(entry.restore, best)
                 entry.restored = ok or entry.restored
             end
         end
@@ -213,6 +295,13 @@ local function SaveAll()
         local ok, tbl = pcall(entry.getter)
         if ok and type(tbl) == "table" then
             Persist.Save(ResolveName(entry), tbl) -- Dates and skips unchanged data itself
+            if entry.macro then
+                if not tbl._savedAt then tbl._savedAt = time() end
+                -- WriteMacro skips an unchanged macro, recreates a deleted one, and
+                -- is refused in combat: the next tick simply tries again
+                local encoded, data = pcall(entry.macro.encode, tbl)
+                if encoded and data then WriteMacro(entry.macro, data) end
+            end
         end
     end
 end
@@ -220,19 +309,41 @@ Persist.SaveAll = SaveAll
 
 -- For /... debug commands: shows what is saved
 function Persist.Debug(print)
-    print("CVar API: " .. (HasAPI() and "yes" or "NO") .. "  ·  saving: " .. (ready and "on" or "waiting"))
+    print("CVar API: " .. (HasAPI() and "yes" or "NO")
+        .. "  ·  macros: " .. (MacrosAvailable() and "loaded" or "waiting")
+        .. "  ·  saving: " .. (ready and "on" or "waiting"))
     for _, entry in ipairs(entries) do
         local name = ResolveName(entry)
         local saved, chunks = Persist.Load(name)
         local live = entry.getter()
-        print(string.format("%s: backup %s (%d part(s), %s)  ·  current %s  ·  restored: %s",
+        print(string.format("%s: CVar copy %s (%d part(s), %s)  ·  current %s  ·  restored: %s",
             name,
             saved and "OK" or "MISSING",
             chunks or 0,
             saved and saved._savedAt and date("%d/%m %H:%M:%S", saved._savedAt) or "-",
             type(live) == "table" and live._savedAt and date("%d/%m %H:%M:%S", live._savedAt) or "-",
             entry.restored and "yes" or "no"))
+        if entry.macro then
+            local fromMacro = ReadMacro(entry.macro)
+            print(string.format("%s: macro copy %s (%s)",
+                entry.macro.name,
+                fromMacro and "OK" or "MISSING",
+                fromMacro and fromMacro._savedAt and date("%d/%m %H:%M:%S", fromMacro._savedAt) or "-"))
+        end
     end
+end
+
+-- Saving starts once every copy had its chance to be read back. Saving
+-- without the macros could create a second macro with default settings, so
+-- after the usual delay it still waits for them (at most MACRO_WAIT seconds).
+local delayPassed = false
+local finished = false
+local function FinishRestore()
+    if finished then return end
+    finished = true
+    TryRestore()
+    ready = true
+    SaveAll()
 end
 
 local events = CreateFrame("Frame")
@@ -240,17 +351,24 @@ events:RegisterEvent("PLAYER_LOGIN")
 events:RegisterEvent("VARIABLES_LOADED")
 events:RegisterEvent("PLAYER_ENTERING_WORLD")
 events:RegisterEvent("PLAYER_LOGOUT")
+events:RegisterEvent("UPDATE_MACROS")
 events:SetScript("OnEvent", function(self, event)
     if event == "PLAYER_LOGOUT" then
         SaveAll()
+    elseif event == "UPDATE_MACROS" then
+        macrosLoaded = true
+        if delayPassed then FinishRestore() elseif not ready then TryRestore() end
     elseif event == "PLAYER_ENTERING_WORLD" then
         self:UnregisterEvent("PLAYER_ENTERING_WORLD")
         TryRestore()
-        -- Last try once everything is loaded, then saving can start
         C_Timer.After(LAST_RESTORE_DELAY, function()
-            TryRestore()
-            ready = true
-            SaveAll()
+            delayPassed = true
+            if MacrosAvailable() then FinishRestore() end
+        end)
+        -- No macro at all on the account: nothing will arrive, saving can start
+        C_Timer.After(MACRO_WAIT, function()
+            macrosLoaded = true
+            FinishRestore()
         end)
     else
         TryRestore()

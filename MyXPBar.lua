@@ -587,6 +587,85 @@ function ns.ResetPosition()
 end
 
 -- =========================================================
+-- COMPACT SETTINGS (macro copy, see Persist.lua)
+-- =========================================================
+-- One line, fields in a fixed order, separated by ";" ("|" is an escape
+-- character in WoW texts). Around 90 characters, a macro holds 255.
+local SETTINGS_VERSION = "1"
+local FLAG_FIELDS = {
+    "locked", "hideBlizzard", "playSound", "showText",
+    "showRestedText", "smooth", "showGains", "showMinimap",
+}
+
+local function ColorToHex(c)
+    return string.format("%02x%02x%02x",
+        math.floor(c.r * 255 + 0.5), math.floor(c.g * 255 + 0.5), math.floor(c.b * 255 + 0.5))
+end
+
+local function HexToColor(hex)
+    if not hex or not hex:match("^%x%x%x%x%x%x$") then return nil end
+    return {
+        r = tonumber(hex:sub(1, 2), 16) / 255,
+        g = tonumber(hex:sub(3, 4), 16) / 255,
+        b = tonumber(hex:sub(5, 6), 16) / 255,
+    }
+end
+
+local function EncodeSettings(db)
+    local flags = {}
+    for i, key in ipairs(FLAG_FIELDS) do flags[i] = db[key] and "1" or "0" end
+    local p = db.point
+    return table.concat({
+        SETTINGS_VERSION,
+        string.format("%d", db._savedAt or time()),
+        p[1], p[2], string.format("%.1f", p[3]), string.format("%.1f", p[4]),
+        string.format("%d", math.floor(db.width + 0.5)),
+        string.format("%d", math.floor(db.height + 0.5)),
+        ColorToHex(db.xpColor), ColorToHex(db.restedColor),
+        string.format("%d", math.floor(db.bgAlpha * 100 + 0.5)),
+        db.style,
+        table.concat(flags),
+        string.format("%d", math.floor(db.minimap.angle + 0.5)),
+        db.language or "",
+    }, ";")
+end
+
+-- Returns a settings table, or nil if anything looks wrong
+local function DecodeSettings(data)
+    local f = { strsplit(";", data) }
+    if f[1] ~= SETTINGS_VERSION or #f < 15 then return nil end
+
+    local x, y = tonumber(f[5]), tonumber(f[6])
+    local width, height = tonumber(f[7]), tonumber(f[8])
+    local xpColor, restedColor = HexToColor(f[9]), HexToColor(f[10])
+    local alpha, angle = tonumber(f[11]), tonumber(f[14])
+    local anchor = "^%u+$"
+    if not (x and y and width and height and xpColor and restedColor and alpha and angle)
+        or not f[3]:match(anchor) or not f[4]:match(anchor)
+        or not f[12]:match("^%a+$") or not f[13]:match("^[01]+$") then
+        return nil
+    end
+
+    local settings = {
+        _savedAt = tonumber(f[2]),
+        point = { f[3], f[4], x, y },
+        width = width,
+        height = height,
+        xpColor = xpColor,
+        restedColor = restedColor,
+        bgAlpha = alpha / 100,
+        style = f[12],
+        minimap = { angle = angle },
+        language = f[15] ~= "" and f[15] or nil,
+    }
+    for i, key in ipairs(FLAG_FIELDS) do
+        local bit = f[13]:sub(i, i)
+        if bit ~= "" then settings[key] = (bit == "1") end
+    end
+    return settings
+end
+
+-- =========================================================
 -- EVENTS
 -- =========================================================
 local eventFrame = CreateFrame("Frame")
@@ -609,14 +688,15 @@ eventFrame:SetScript("OnEvent", function(self, event, arg1)
         ns.ApplyLayout()
         for _, callback in ipairs(ns.dbReadyCallbacks) do callback() end
 
-        -- Forever beta: after a relog the settings come back from the CVar copy
+        -- Forever beta: after a relog the settings come back from the CVar
+        -- copy, after a restart from the macro copy
         ns.Persist.Register("MyXPBarDB", function() return MyXPBarDB end, function(saved)
             ns.Persist.Replace(MyXPBarDB, saved, ns.defaults)
             if not ns.db.language then ns.db.language = ns.DefaultLanguage() end
             ns.Refresh()
             for _, callback in ipairs(ns.dbReadyCallbacks) do callback() end
             if ns.RefreshOptions then ns.RefreshOptions() end
-        end)
+        end, { name = "MyXPBar", encode = EncodeSettings, decode = DecodeSettings })
         return
     elseif event == "PLAYER_ENTERING_WORLD" then
         -- Reset XP memory on login to avoid calculation bugs

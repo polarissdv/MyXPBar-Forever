@@ -1,5 +1,15 @@
 # MyXPBar - Changelog
 
+## 2.6
+- Fixed: position, size, colors, style and options were reset after closing
+  and restarting the game. The Forever beta never writes the CVar backup to
+  disk, so it only covered a relog. The settings are now also kept in one
+  account macro named "MyXPBar", which the server stores: they come back
+  after a full restart. Keep the macro (it is recreated if deleted).
+- Settings are backed up every 5 seconds instead of 20, and a change made
+  in combat is saved as soon as combat ends.
+- /mxp debug now also shows the macro backup.
+
 ## 2.5
 - 6 bar styles: classic, gold framed, segmented, thin line, spark and split
   rested. Pick one in the new Style section, the preview follows.
