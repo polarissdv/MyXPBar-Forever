@@ -32,9 +32,12 @@ ns.defaults = {
 -- Blizzard frames that hold the default XP bar, depending on the client UI.
 -- Only the ones that exist in the current client are touched.
 local BLIZZARD_XP_FRAMES = {
-    "MainStatusTrackingBarContainer", -- Modern client (WoW Forever / Retail)
-    "MainMenuExpBar",                 -- Classic-style UI
-    "ExhaustionTick",                 -- Classic-style rested marker
+    "StatusTrackingBarManager",            -- Holds both bars and re-shows them by itself
+    "MainStatusTrackingBarContainer",      -- XP bar (WoW Forever / Retail)
+    "SecondaryStatusTrackingBarContainer", -- Reputation / honor bar
+    "MainMenuExpBar",                      -- Classic-style UI
+    "ReputationWatchBar",                  -- Classic-style reputation bar
+    "ExhaustionTick",                      -- Classic-style rested marker
 }
 
 -- Variables for mob calculation
@@ -131,15 +134,17 @@ local function UpdateBlizzardBar()
             if hideBlizzard then
                 ApplyBlizzardFrame(frame)
             elseif changed then
-                -- Give the bar back to Blizzard (max level, or option turned off)
+                -- Give the bars back to Blizzard (max level, or option turned off)
                 frame:SetAlpha(1)
-                if StatusTrackingBarManager and StatusTrackingBarManager.UpdateBarsShown then
-                    StatusTrackingBarManager:UpdateBarsShown()
-                elseif not InCombatLockdown() then
-                    frame:Show()
-                end
+                if not InCombatLockdown() then frame:Show() end
             end
         end
+    end
+
+    -- The manager decides which bars to show: let it redo its layout
+    if not hideBlizzard and changed and StatusTrackingBarManager
+        and StatusTrackingBarManager.UpdateBarsShown and not InCombatLockdown() then
+        pcall(StatusTrackingBarManager.UpdateBarsShown, StatusTrackingBarManager)
     end
 end
 

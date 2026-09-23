@@ -1,6 +1,9 @@
 # MyXPBar - Changelog
 
 ## 2.7
+- Fixed: the Blizzard bars at the bottom of the screen stayed visible on the
+  Forever client. Both the XP bar and the reputation / honor bar are hidden
+  now, together with the manager that kept showing them again.
 - The width slider now goes up to the width of your screen (it stopped at
   1400 px).
 - New "Full screen width" option: the bar runs from one edge of the screen
