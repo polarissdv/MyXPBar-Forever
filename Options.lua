@@ -4,7 +4,7 @@ local T = ns.T
 -- =========================================================
 -- STYLE (native WoW look)
 -- =========================================================
-local VERSION = "2.7"
+local VERSION = "2.8"
 local PANEL_WIDTH = 420
 local PAD = 26
 local CONTENT_W = PANEL_WIDTH - PAD * 2
@@ -598,6 +598,12 @@ CreateSlider("HEIGHT", 8, 60, 1,
     function(v) ns.db.height = v; ns.Refresh(); RefreshPreview() end,
     function(v) return v .. " px" end)
 
+-- 0: the next level. Anything above is an estimate (see SessionLine)
+CreateSlider("TARGET_LEVEL", 0, 60, 1,
+    function() return ns.db.targetLevel or 0 end,
+    function(v) ns.db.targetLevel = v; ns.Refresh() end,
+    function(v) return v == 0 and T("TARGET_NEXT") or (T("BAR_LEVEL") .. " " .. v) end)
+
 Section("SECTION_COLORS")
 CreateColorRow("XP_COLOR", "xpColor")
 CreateColorRow("RESTED_COLOR", "restedColor")
@@ -615,6 +621,8 @@ OptionCheck("SHOW_RESTED", "SHOW_RESTED_DESC", "showRestedText")
 OptionCheck("SMOOTH", "SMOOTH_DESC", "smooth")
 OptionCheck("SHOW_GAINS", "SHOW_GAINS_DESC", "showGains")
 OptionCheck("MINIMAP", "MINIMAP_DESC", "showMinimap", function() ns.UpdateMinimapButton() end)
+OptionCheck("REP_BAR", "REP_BAR_DESC", "showRepBar")
+OptionCheck("SHOW_SESSION", "SHOW_SESSION_DESC", "showSession")
 OptionCheck("FULL_WIDTH", "FULL_WIDTH_DESC", "fullWidth")
 OptionCheck("REP_HOVER", "REP_HOVER_DESC", "showRepHover")
 cursorY = cursorY - 34

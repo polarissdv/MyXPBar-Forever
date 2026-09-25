@@ -24,6 +24,10 @@ ns.defaults = {
     style = "classic", -- classic | gold | segments | thin | spark | restedbar
     fullWidth = false,   -- Stretch from one screen edge to the other (width is ignored)
     showRepHover = true, -- Mouse over the bar: tracked reputation
+    showRepBar = false,  -- A thin reputation bar under the XP bar
+    showSession = true,  -- XP per hour and time left under the bar
+    targetLevel = 0,     -- 0: next level
+    xpPerLevel = {},     -- Learned XP needed per level, for the estimate
     point = { "CENTER", "CENTER", 0, -200 },
     showMinimap = true,
     minimap = { angle = 225 },
@@ -218,6 +222,11 @@ local subText = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall"
 subText:SetPoint("TOP", mainFrame, "BOTTOM", 0, -5)
 subText:SetTextColor(0.8, 0.8, 0.8)
 
+-- XP per hour and time left (bottom, under the rested text)
+local sessionText = mainFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+sessionText:SetPoint("TOP", subText, "BOTTOM", 0, -2)
+sessionText:SetTextColor(0.65, 0.65, 0.7)
+
 -- =========================================================
 -- BAR STYLES
 -- =========================================================
@@ -335,6 +344,19 @@ local function UpdateRepBar()
     return true
 end
 
+-- A thin reputation bar of its own, under the XP bar (option)
+local repStrip = CreateFrame("StatusBar", nil, mainFrame)
+repStrip:SetStatusBarTexture(BAR_TEXTURE)
+repStrip:Hide()
+local repStripBg = repStrip:CreateTexture(nil, "BACKGROUND")
+repStripBg:SetAllPoints()
+local repStripName = repStrip:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+repStripName:SetPoint("LEFT", 5, 0)
+repStripName:SetTextColor(1, 1, 1)
+local repStripValue = repStrip:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+repStripValue:SetPoint("RIGHT", -5, 0)
+repStripValue:SetTextColor(1, 1, 1)
+
 local function SetXPTextsShown(show)
     levelText:SetShown(show)
     valueText:SetShown(show)
@@ -353,6 +375,42 @@ local function ShowReputation()
         GameTooltip:Show()
     end
 end
+
+-- Fills the permanent strip, or hides it when nothing is tracked
+local function UpdateRepStrip()
+    if not ns.db.showRepBar then
+        repStrip:Hide()
+        return
+    end
+    local name, standing, barMin, barMax, value = GetWatchedReputation()
+    if not name then
+        repStrip:Hide()
+        return
+    end
+    local max = math.max(barMax - barMin, 1)
+    local current = math.max(value - barMin, 0)
+    repStrip:SetMinMaxValues(0, max)
+    repStrip:SetValue(current)
+
+    local color = FACTION_BAR_COLORS and FACTION_BAR_COLORS[standing]
+    if color then
+        repStrip:SetStatusBarColor(color.r, color.g, color.b, 1)
+    else
+        repStrip:SetStatusBarColor(0, 0.6, 0.1, 1)
+    end
+    repStripBg:SetColorTexture(0, 0, 0, ns.db.bgAlpha)
+
+    local label = _G["FACTION_STANDING_LABEL" .. tostring(standing)] or ""
+    local tall = repStrip:GetHeight() >= 12
+    repStripName:SetShown(tall)
+    repStripValue:SetShown(tall)
+    if tall then
+        repStripName:SetText(name)
+        repStripValue:SetText(string.format("%s  %.1f%%", label, current / max * 100))
+    end
+    repStrip:Show()
+end
+ns.UpdateRepStrip = UpdateRepStrip
 
 local function HideReputation()
     if repBar:IsShown() then
@@ -461,8 +519,18 @@ function ns.ApplyLayout()
     restedBar:SetShown(style ~= "restedbar")
     underRested:SetShown(style == "restedbar")
 
+    -- Reputation strip: under the bar (and under the rested strip if any)
+    local above = (style == "restedbar") and underRested or mainFrame
+    repStrip:ClearAllPoints()
+    repStrip:SetHeight(math.max(8, math.floor(db.height * 0.4)))
+    repStrip:SetPoint("TOPLEFT", above, "BOTTOMLEFT", 0, -2)
+    repStrip:SetPoint("TOPRIGHT", above, "BOTTOMRIGHT", 0, -2)
+    UpdateRepStrip()
+
     subText:ClearAllPoints()
-    if style == "restedbar" then
+    if db.showRepBar and repStrip:IsShown() then
+        subText:SetPoint("TOP", repStrip, "BOTTOM", 0, -3)
+    elseif style == "restedbar" then
         subText:SetPoint("TOP", underRested, "BOTTOM", 0, -3)
     else
         subText:SetPoint("TOP", mainFrame, "BOTTOM", 0, -5)
@@ -478,6 +546,7 @@ function ns.ApplyLayout()
 
     SetXPTextsShown(db.showText and not repBar:IsShown())
     subText:SetShown(db.showRestedText)
+    sessionText:SetShown(db.showSession)
 end
 
 -- =========================================================
@@ -591,6 +660,72 @@ local function ShowLevelFlash()
 end
 
 -- =========================================================
+-- SESSION: XP per hour and time left
+-- =========================================================
+-- The game only tells how much XP this level needs. The XP of the levels
+-- already played is remembered, and anything above is extrapolated, so the
+-- estimate for a far away level stays an estimate.
+local MIN_SESSION = 60      -- Seconds before an XP/hour rate means anything
+local GROWTH = 1.1          -- XP growth per level, when nothing is known
+
+local session = { start = GetTime(), xp = 0 }
+
+function ns.ResetSession()
+    session.start, session.xp = GetTime(), 0
+end
+
+-- XP needed to go from this level to the next one
+local function XPForLevel(level)
+    local learned = ns.db.xpPerLevel[level]
+    if learned then return learned end
+    local bestLevel, bestValue
+    for known, value in pairs(ns.db.xpPerLevel) do
+        if not bestLevel or known > bestLevel then bestLevel, bestValue = known, value end
+    end
+    if not bestLevel then return nil end
+    return bestValue * GROWTH ^ (level - bestLevel)
+end
+
+-- XP left to reach the target level, or nil when it can't be estimated
+local function XPToTarget(level, currXP, maxXP)
+    local target = ns.db.targetLevel
+    if not target or target <= level then target = level + 1 end
+    local remaining = maxXP - currXP
+    for step = level + 1, target - 1 do
+        local needed = XPForLevel(step)
+        if not needed then return nil, target end
+        remaining = remaining + needed
+    end
+    return remaining, target
+end
+
+local function FormatDuration(seconds)
+    if seconds < 60 then return "< 1 " .. ns.T("MINUTE_SHORT") end
+    local hours = math.floor(seconds / 3600)
+    local minutes = math.floor((seconds % 3600) / 60)
+    if hours > 0 then
+        return string.format("%d %s %02d", hours, ns.T("HOUR_SHORT"), minutes)
+    end
+    return string.format("%d %s", minutes, ns.T("MINUTE_SHORT"))
+end
+
+-- "12 345 XP/h  ·  level 30 in ~2 h 15", or "" when there is nothing to show
+local function SessionLine(level, currXP, maxXP)
+    local elapsed = GetTime() - session.start
+    if session.xp <= 0 or elapsed < MIN_SESSION then return "" end
+
+    local perHour = session.xp / elapsed * 3600
+    local line = string.format(ns.T("SESSION_XPH"), FormatNumber(math.floor(perHour + 0.5)))
+
+    local remaining, target = XPToTarget(level, currXP, maxXP)
+    if remaining and perHour > 0 then
+        line = line .. "  ·  " .. string.format(ns.T("SESSION_ETA"), target,
+            FormatDuration(remaining / perHour * 3600))
+    end
+    return line
+end
+
+-- =========================================================
 -- LOGIC AND UPDATES
 -- =========================================================
 -- Only touch a font string when its text really changed
@@ -625,12 +760,19 @@ local function UpdateStatus()
     local levelChanged = (lastLevel ~= nil and level ~= lastLevel)
     lastLevel = level
 
+    -- What this level needs is learned, for the "time left" estimate
+    ns.db.xpPerLevel[level] = maxXP
+
     local diff = currXP - lastXP
     if diff > 0 and not levelChanged then
         lastGain = diff
+        session.xp = session.xp + diff
         PlayXPSound()
         ShowGain(diff)
     elseif levelChanged then
+        -- The end of the previous level plus the start of this one
+        local previous = ns.db.xpPerLevel[level - 1]
+        session.xp = session.xp + currXP + (previous and math.max(previous - lastXP, 0) or 0)
         ShowLevelFlash()
     end
     -- diff < 0: player probably leveled up (XP reset), keep last known estimation
@@ -675,6 +817,8 @@ local function UpdateStatus()
     end
 
     SetTextCached(pctText, "pct", totalString)
+    SetTextCached(sessionText, "session", ns.db.showSession and SessionLine(level, currXP, maxXP) or "")
+    UpdateRepStrip()
 end
 
 -- Several events fire together (XP gain + rested update): redraw only once
@@ -715,6 +859,7 @@ local FLAG_FIELDS = {
     "locked", "hideBlizzard", "playSound", "showText",
     "showRestedText", "smooth", "showGains", "showMinimap",
     "fullWidth", "showRepHover", -- 2.7: missing in older copies, defaults apply
+    "showRepBar", "showSession", -- 2.8
 }
 
 local function ColorToHex(c)
@@ -747,6 +892,7 @@ local function EncodeSettings(db)
         table.concat(flags),
         string.format("%d", math.floor(db.minimap.angle + 0.5)),
         db.language or "",
+        string.format("%d", math.floor(db.targetLevel or 0)), -- 2.8, appended
     }, ";")
 end
 
@@ -777,6 +923,7 @@ local function DecodeSettings(data)
         style = f[12],
         minimap = { angle = angle },
         language = f[15] ~= "" and f[15] or nil,
+        targetLevel = tonumber(f[16]), -- nil in copies written before 2.8
     }
     for i, key in ipairs(FLAG_FIELDS) do
         local bit = f[13]:sub(i, i)

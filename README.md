@@ -7,7 +7,7 @@
 **A clean, lightweight and fully customizable XP bar for World of Warcraft: Forever.**
 
 [![CurseForge](https://img.shields.io/badge/CurseForge-MyXPBar%20Forever-F16436?logo=curseforge&logoColor=white)](https://www.curseforge.com/wow/addons/myxpbar-forever)
-![Version](https://img.shields.io/badge/version-2.7-9966ff)
+![Version](https://img.shields.io/badge/version-2.8-9966ff)
 ![Interface](https://img.shields.io/badge/WoW%3A%20Forever-1.60.x%20(16001)-c8a14a)
 
 </div>
@@ -38,6 +38,10 @@ World of Warcraft style. No libraries, no dependencies.
   (see below).
 - **Full screen width** — one click and the bar runs from one edge of the screen to the other,
   at any resolution.
+- **Reputation bar** — a thin bar under the XP bar with your tracked faction, standing and
+  progress (optional).
+- **XP per hour and time left** — your rate since login, and the estimated time to the level
+  you aim for.
 - **Reputation on hover** — mouse over the bar to see your tracked reputation: faction, standing
   and progress.
 - **Lightweight** — texts are only redrawn when they change, and nothing runs while the bar is
@@ -54,9 +58,9 @@ applied live.
 | Section | What you can change |
 | --- | --- |
 | Style | Classic, gold framed, segmented, thin line, spark, split rested |
-| Size | Width (200 px up to the width of your screen) and height (8 to 60 px) |
+| Size | Width (200 px up to the width of your screen), height (8 to 60 px) and target level |
 | Colors | 8 quick colors or the full color wheel, for the XP bar and the rested XP, plus background opacity |
-| Options | Lock the bar, hide the Blizzard bar, sound on XP gain, texts on the bar, rested text, smooth animation, floating +XP, minimap button, full screen width, reputation on hover |
+| Options | Lock the bar, hide the Blizzard bar, sound on XP gain, texts on the bar, rested text, smooth animation, floating +XP, minimap button, full screen width, reputation on hover, reputation bar, XP per hour |
 
 ## Installation
 
