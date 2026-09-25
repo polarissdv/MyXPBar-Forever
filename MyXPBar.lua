@@ -365,6 +365,8 @@ end
 
 local function ShowReputation()
     if not ns.db.showRepHover then return end
+    -- The permanent bar already shows it: no need to cover the XP bar
+    if ns.db.showRepBar and repStrip:IsShown() then return end
     if UpdateRepBar() then
         repBar:Show()
         SetXPTextsShown(false)

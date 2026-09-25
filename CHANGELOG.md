@@ -3,7 +3,8 @@
 ## 2.8
 - New **reputation bar**: a thin bar under the XP bar with your tracked
   faction, its standing and its progress, in the faction's color. It hides
-  itself when no faction is tracked. Off by default.
+  itself when no faction is tracked, and replaces the reputation on hover
+  while it is shown. Off by default.
 - New **XP per hour and time left** under the bar, counted from the moment
   you logged in. Pick a target level in the options (or leave it on "Next
   level"). The XP needed per level is learned as you level up, so the
