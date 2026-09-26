@@ -1,6 +1,6 @@
 # MyXPBar - Changelog
 
-## 2.9
+## 2.8.1
 - Fixed: with the reputation bar shown, the rested text and the "level X in
   ~Y min" line were hidden behind it. They now always sit under the lowest
   bar, centered, and the time left takes the place of the rested line when
