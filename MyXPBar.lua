@@ -357,6 +357,27 @@ local repStripValue = repStrip:CreateFontString(nil, "OVERLAY", "GameFontNormalS
 repStripValue:SetPoint("RIGHT", -5, 0)
 repStripValue:SetTextColor(1, 1, 1)
 
+-- Rested and session texts sit under whatever is lowest: the reputation strip,
+-- the rested strip or the bar. The strip appears later than the layout (once
+-- the faction data arrives), so this runs again every time it's updated.
+local function AnchorBottomTexts()
+    local below, gap = mainFrame, -5
+    if repStrip:IsShown() then
+        below, gap = repStrip, -3
+    elseif underRested:IsShown() then
+        below, gap = underRested, -3
+    end
+    subText:ClearAllPoints()
+    subText:SetPoint("TOP", below, "BOTTOM", 0, gap)
+    -- No rested line: the session line takes its place
+    sessionText:ClearAllPoints()
+    if subText:IsShown() and (subText:GetText() or "") ~= "" then
+        sessionText:SetPoint("TOP", subText, "BOTTOM", 0, -2)
+    else
+        sessionText:SetPoint("TOP", below, "BOTTOM", 0, gap)
+    end
+end
+
 local function SetXPTextsShown(show)
     levelText:SetShown(show)
     valueText:SetShown(show)
@@ -382,11 +403,13 @@ end
 local function UpdateRepStrip()
     if not ns.db.showRepBar then
         repStrip:Hide()
+        AnchorBottomTexts()
         return
     end
     local name, standing, barMin, barMax, value = GetWatchedReputation()
     if not name then
         repStrip:Hide()
+        AnchorBottomTexts()
         return
     end
     local max = math.max(barMax - barMin, 1)
@@ -411,6 +434,7 @@ local function UpdateRepStrip()
         repStripValue:SetText(string.format("%s  %.1f%%", label, current / max * 100))
     end
     repStrip:Show()
+    AnchorBottomTexts()
 end
 ns.UpdateRepStrip = UpdateRepStrip
 
@@ -529,15 +553,6 @@ function ns.ApplyLayout()
     repStrip:SetPoint("TOPRIGHT", above, "BOTTOMRIGHT", 0, -2)
     UpdateRepStrip()
 
-    subText:ClearAllPoints()
-    if db.showRepBar and repStrip:IsShown() then
-        subText:SetPoint("TOP", repStrip, "BOTTOM", 0, -3)
-    elseif style == "restedbar" then
-        subText:SetPoint("TOP", underRested, "BOTTOM", 0, -3)
-    else
-        subText:SetPoint("TOP", mainFrame, "BOTTOM", 0, -5)
-    end
-
     -- Reputation texts sit exactly where the XP texts are
     repName:ClearAllPoints()
     repName:SetPoint(levelText:GetPoint())
@@ -549,6 +564,7 @@ function ns.ApplyLayout()
     SetXPTextsShown(db.showText and not repBar:IsShown())
     subText:SetShown(db.showRestedText)
     sessionText:SetShown(db.showSession)
+    AnchorBottomTexts()
 end
 
 -- =========================================================

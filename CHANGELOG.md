@@ -1,5 +1,11 @@
 # MyXPBar - Changelog
 
+## 2.9
+- Fixed: with the reputation bar shown, the rested text and the "level X in
+  ~Y min" line were hidden behind it. They now always sit under the lowest
+  bar, centered, and the time left takes the place of the rested line when
+  there is no rested XP.
+
 ## 2.8
 - New **reputation bar**: a thin bar under the XP bar with your tracked
   faction, its standing and its progress, in the faction's color. It hides
