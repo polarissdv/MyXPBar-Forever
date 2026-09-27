@@ -1,5 +1,13 @@
 # MyXPBar - Changelog
 
+## 2.9
+- New option **XP of finished quests** (off by default): the XP of the
+  quests you finished but did not turn in yet shows on the bar in gold, and
+  under it ("Quests: +4 050 XP"), with "level X once turned in" when it is
+  enough to level up. Hover the bar for the list of quests and their XP.
+- The reputation bar now updates on every reputation gain, not only on the
+  next XP gain.
+
 ## 2.8.1
 - Fixed: with the reputation bar shown, the rested text and the "level X in
   ~Y min" line were hidden behind it. They now always sit under the lowest

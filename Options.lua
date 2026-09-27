@@ -4,7 +4,7 @@ local T = ns.T
 -- =========================================================
 -- STYLE (native WoW look)
 -- =========================================================
-local VERSION = "2.8.1"
+local VERSION = "2.9"
 local PANEL_WIDTH = 420
 local PAD = 26
 local CONTENT_W = PANEL_WIDTH - PAD * 2
@@ -625,6 +625,8 @@ OptionCheck("REP_BAR", "REP_BAR_DESC", "showRepBar")
 OptionCheck("SHOW_SESSION", "SHOW_SESSION_DESC", "showSession")
 OptionCheck("FULL_WIDTH", "FULL_WIDTH_DESC", "fullWidth")
 OptionCheck("REP_HOVER", "REP_HOVER_DESC", "showRepHover")
+OptionCheck("QUEST_XP", "QUEST_XP_DESC", "showQuestXP")
+if checkIndex % 2 == 1 then cursorY = cursorY - 28 end
 cursorY = cursorY - 34
 
 -- Language (FR | EN)
@@ -733,9 +735,14 @@ end
 SLASH_MYXPBAR1 = "/mxp"
 SLASH_MYXPBAR2 = "/myxpbar"
 SlashCmdList.MYXPBAR = function(msg)
-    if strlower(strtrim(msg or "")) == "debug" then
+    local command = strlower(strtrim(msg or ""))
+    local function Print(line) DEFAULT_CHAT_FRAME:AddMessage("|cff9966ffMyXPBar|r " .. line) end
+    if command == "debug" then
         -- Shows the state of the settings backup (Forever beta workaround)
-        ns.Persist.Debug(function(line) DEFAULT_CHAT_FRAME:AddMessage("|cff9966ffMyXPBar|r " .. line) end)
+        ns.Persist.Debug(Print)
+    elseif command == "quests" then
+        -- What the quest log gives on this client
+        ns.DebugQuests(Print)
     else
         ns.ToggleOptions()
     end

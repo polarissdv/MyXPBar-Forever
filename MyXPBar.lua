@@ -26,6 +26,7 @@ ns.defaults = {
     showRepHover = true, -- Mouse over the bar: tracked reputation
     showRepBar = false,  -- A thin reputation bar under the XP bar
     showSession = true,  -- XP per hour and time left under the bar
+    showQuestXP = false, -- XP of the finished quests waiting in the quest log
     targetLevel = 0,     -- 0: next level
     xpPerLevel = {},     -- Learned XP needed per level, for the estimate
     point = { "CENTER", "CENTER", 0, -200 },
@@ -191,13 +192,21 @@ local xpBar = CreateFrame("StatusBar", nil, mainFrame)
 xpBar:SetPoint("TOPLEFT", mainFrame, "TOPLEFT", 0, 0)
 xpBar:SetPoint("BOTTOMRIGHT", mainFrame, "BOTTOMRIGHT", 0, 0)
 xpBar:SetStatusBarTexture(BAR_TEXTURE)
-xpBar:SetFrameLevel(mainFrame:GetFrameLevel() + 2)
+xpBar:SetFrameLevel(mainFrame:GetFrameLevel() + 3)
 
 -- Rested Bar (Background layer)
 local restedBar = CreateFrame("StatusBar", nil, mainFrame)
 restedBar:SetAllPoints(xpBar)
 restedBar:SetStatusBarTexture(BAR_TEXTURE)
 restedBar:SetFrameLevel(mainFrame:GetFrameLevel() + 1)
+
+-- Finished quests waiting to be turned in (between the XP and the rested layers)
+local questBar = CreateFrame("StatusBar", nil, mainFrame)
+questBar:SetAllPoints(xpBar)
+questBar:SetStatusBarTexture(BAR_TEXTURE)
+questBar:SetStatusBarColor(1, 0.75, 0.1, 0.75)
+questBar:SetFrameLevel(mainFrame:GetFrameLevel() + 2)
+questBar:Hide()
 
 -- =========================================================
 -- TEXT ELEMENTS
@@ -490,6 +499,8 @@ function ns.ApplyLayout()
         xpBar:SetPoint("BOTTOMRIGHT", 0, 0)
     end
     restedBar:SetAllPoints(xpBar)
+    questBar:SetAllPoints(xpBar)
+    questBar:SetShown(db.showQuestXP)
     bg:ClearAllPoints()
     bg:SetAllPoints(xpBar)
     bg:SetColorTexture(0, 0, 0, db.bgAlpha)
@@ -562,7 +573,7 @@ function ns.ApplyLayout()
     repStanding:SetPoint(pctText:GetPoint())
 
     SetXPTextsShown(db.showText and not repBar:IsShown())
-    subText:SetShown(db.showRestedText)
+    subText:SetShown(db.showRestedText or db.showQuestXP)
     sessionText:SetShown(db.showSession)
     AnchorBottomTexts()
 end
@@ -744,6 +755,89 @@ local function SessionLine(level, currXP, maxXP)
 end
 
 -- =========================================================
+-- FINISHED QUESTS (XP waiting in the quest log)
+-- =========================================================
+-- A quest's XP reward only changes with the player's level: it is read once
+-- per quest. Some clients only give the reward of the selected quest, and
+-- selecting one can fire a new quest log update: the cache ends that loop.
+local questXPCache = {} -- [questID] = xp
+
+local function QuestRewardXP(index, questID)
+    if not GetQuestLogRewardXP then return 0 end
+    if questID and questID > 0 then
+        if questXPCache[questID] then return questXPCache[questID] end
+        local ok, xp = pcall(GetQuestLogRewardXP, questID)
+        if not (ok and xp and xp > 0) and SelectQuestLogEntry and GetQuestLogSelection then
+            local previous = GetQuestLogSelection()
+            SelectQuestLogEntry(index)
+            ok, xp = pcall(GetQuestLogRewardXP)
+            SelectQuestLogEntry(previous or 0)
+        end
+        xp = ok and tonumber(xp) or 0
+        questXPCache[questID] = xp
+        return xp
+    end
+    return 0
+end
+
+-- Total XP of the finished quests, and the list of them ({ title, xp })
+local function FinishedQuests()
+    local list, total = {}, 0
+    local count = (C_QuestLog and C_QuestLog.GetNumQuestLogEntries and C_QuestLog.GetNumQuestLogEntries())
+        or (GetNumQuestLogEntries and GetNumQuestLogEntries()) or 0
+    for i = 1, count do
+        local title, isHeader, isComplete, questID
+        if C_QuestLog and C_QuestLog.GetInfo then
+            local info = C_QuestLog.GetInfo(i)
+            if info then
+                title, isHeader, questID = info.title, info.isHeader, info.questID
+                isComplete = questID and C_QuestLog.IsComplete and C_QuestLog.IsComplete(questID)
+            end
+        elseif GetQuestLogTitle then
+            local complete, _
+            title, _, _, isHeader, _, complete, _, questID = GetQuestLogTitle(i)
+            isComplete = (complete == 1)
+        end
+        if title and not isHeader and isComplete then
+            local xp = QuestRewardXP(i, questID)
+            if xp > 0 then
+                total = total + xp
+                tinsert(list, { title = title, xp = xp })
+            end
+        end
+    end
+    return total, list
+end
+
+-- Hover: every finished quest and its XP (under the reputation, if any)
+local function ShowQuestTooltip()
+    if not ns.db.showQuestXP then return end
+    local total, list = FinishedQuests()
+    if #list == 0 then return end
+    if GameTooltip:IsOwned(mainFrame) then
+        GameTooltip:AddLine(" ")
+    else
+        GameTooltip:SetOwner(mainFrame, "ANCHOR_TOP")
+    end
+    GameTooltip:AddDoubleLine(ns.T("QUEST_TT_TITLE"), "+" .. FormatNumber(total) .. " XP", 1, 0.82, 0, 1, 0.75, 0.1)
+    for _, quest in ipairs(list) do
+        GameTooltip:AddDoubleLine(quest.title, FormatNumber(quest.xp) .. " XP", 1, 1, 1, 0.8, 0.8, 0.8)
+    end
+    GameTooltip:Show()
+end
+mainFrame:HookScript("OnEnter", ShowQuestTooltip)
+
+-- Debug: what the quest log gives, to check the API on this client
+function ns.DebugQuests(print)
+    print(string.format("GetQuestLogRewardXP: %s  ·  C_QuestLog.GetInfo: %s",
+        GetQuestLogRewardXP and "yes" or "NO", (C_QuestLog and C_QuestLog.GetInfo) and "yes" or "no"))
+    wipe(questXPCache)
+    local total, list = FinishedQuests()
+    for _, quest in ipairs(list) do print(string.format("  %s: %d XP", quest.title, quest.xp)) end
+    print(string.format("%d finished quest(s) with XP, %d XP in total", #list, total))
+end
+
+-- =========================================================
 -- LOGIC AND UPDATES
 -- =========================================================
 -- Only touch a font string when its text really changed
@@ -821,18 +915,32 @@ local function UpdateStatus()
     if maxXP > 0 then pct = (currXP / maxXP) * 100 end
     local totalString = string.format("%.1f%%", pct)
 
+    -- Bottom text: rested and / or finished quests
+    local subParts = {}
+
     -- Add projected rested percentage in parentheses
     if rested > 0 and maxXP > 0 then
         local restedPct = (rested / maxXP) * 100
         local projected = pct + restedPct
         if projected > 100 then projected = 100 end
         totalString = totalString .. string.format(" (%.1f%%)", projected)
-
-        -- Bottom text update
-        SetTextCached(subText, "sub", string.format("%s: %.1f%%", ns.T("BAR_RESTED"), restedPct))
-    else
-        SetTextCached(subText, "sub", "")
+        if ns.db.showRestedText then
+            tinsert(subParts, string.format("%s: %.1f%%", ns.T("BAR_RESTED"), restedPct))
+        end
     end
+
+    -- Finished quests: a gold part after the XP, and their total
+    local questXP = ns.db.showQuestXP and FinishedQuests() or 0
+    questBar:SetMinMaxValues(0, maxXP)
+    questBar:SetValue(math.min(currXP + questXP, maxXP))
+    if questXP > 0 then
+        local line = string.format(ns.T("BAR_QUESTS"), FormatNumber(questXP))
+        if currXP + questXP >= maxXP then
+            line = line .. "  |cffffd100" .. string.format(ns.T("QUEST_LEVEL_UP"), level + 1) .. "|r"
+        end
+        tinsert(subParts, line)
+    end
+    SetTextCached(subText, "sub", table.concat(subParts, "  ·  "))
 
     SetTextCached(pctText, "pct", totalString)
     SetTextCached(sessionText, "session", ns.db.showSession and SessionLine(level, currXP, maxXP) or "")
@@ -878,6 +986,7 @@ local FLAG_FIELDS = {
     "showRestedText", "smooth", "showGains", "showMinimap",
     "fullWidth", "showRepHover", -- 2.7: missing in older copies, defaults apply
     "showRepBar", "showSession", -- 2.8
+    "showQuestXP", -- 2.9
 }
 
 local function ColorToHex(c)
@@ -965,6 +1074,7 @@ eventFrame:RegisterEvent("DISABLE_XP_GAIN")
 eventFrame:RegisterEvent("UPDATE_FACTION")
 eventFrame:RegisterEvent("DISPLAY_SIZE_CHANGED")
 eventFrame:RegisterEvent("UI_SCALE_CHANGED")
+eventFrame:RegisterEvent("QUEST_LOG_UPDATE")
 
 eventFrame:SetScript("OnEvent", function(self, event, arg1)
     if event == "ADDON_LOADED" then
@@ -994,7 +1104,12 @@ eventFrame:SetScript("OnEvent", function(self, event, arg1)
         return
     elseif event == "UPDATE_FACTION" then
         if repBar:IsShown() and not UpdateRepBar() then HideReputation() end
+        UpdateRepStrip() -- Reputation gained without XP (turn-ins, cloth donations)
         return
+    elseif event == "QUEST_LOG_UPDATE" then
+        if not ns.db.showQuestXP then return end
+    elseif event == "PLAYER_LEVEL_UP" then
+        wipe(questXPCache) -- Quests give less XP once they turn green or grey
     elseif event == "DISPLAY_SIZE_CHANGED" or event == "UI_SCALE_CHANGED" then
         -- Full width segments are placed from the bar width
         if ns.db.fullWidth then ns.ApplyLayout() end

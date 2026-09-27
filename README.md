@@ -7,7 +7,7 @@
 **A clean, lightweight and fully customizable XP bar for World of Warcraft: Forever.**
 
 [![CurseForge](https://img.shields.io/badge/CurseForge-MyXPBar%20Forever-F16436?logo=curseforge&logoColor=white)](https://www.curseforge.com/wow/addons/myxpbar-forever)
-![Version](https://img.shields.io/badge/version-2.8.1-9966ff)
+![Version](https://img.shields.io/badge/version-2.9-9966ff)
 ![Interface](https://img.shields.io/badge/WoW%3A%20Forever-1.60.x%20(16001)-c8a14a)
 
 </div>
@@ -42,6 +42,8 @@ World of Warcraft style. No libraries, no dependencies.
   progress (optional).
 - **XP per hour and time left** — your rate since login, and the estimated time to the level
   you aim for.
+- **XP of finished quests** — the XP of the quests you finished but did not turn in yet, in gold
+  on the bar, with the list on hover. Tells you when turning them in will level you up (optional).
 - **Reputation on hover** — mouse over the bar to see your tracked reputation: faction, standing
   and progress.
 - **Lightweight** — texts are only redrawn when they change, and nothing runs while the bar is
@@ -60,7 +62,7 @@ applied live.
 | Style | Classic, gold framed, segmented, thin line, spark, split rested |
 | Size | Width (200 px up to the width of your screen), height (8 to 60 px) and target level |
 | Colors | 8 quick colors or the full color wheel, for the XP bar and the rested XP, plus background opacity |
-| Options | Lock the bar, hide the Blizzard bar, sound on XP gain, texts on the bar, rested text, smooth animation, floating +XP, minimap button, full screen width, reputation on hover, reputation bar, XP per hour |
+| Options | Lock the bar, hide the Blizzard bar, sound on XP gain, texts on the bar, rested text, smooth animation, floating +XP, minimap button, full screen width, reputation on hover, reputation bar, XP per hour, XP of finished quests |
 
 ## Installation
 
@@ -82,6 +84,7 @@ applied live.
 | --- | --- |
 | `/mxp` or `/myxpbar` | Open / close the options menu |
 | `/mxp debug` | Check the settings backup |
+| `/mxp quests` | List the finished quests and their XP |
 
 ## About the Forever beta saving bug
 
