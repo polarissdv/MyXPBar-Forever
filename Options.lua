@@ -668,14 +668,18 @@ langArrow:SetVertexColor(GOLD[1], GOLD[2], GOLD[3])
 langArrow:SetRotation(math.rad(45))
 langArrow:SetSize(7, 7)
 
--- The list itself, opened under the button
-local langList = CreateFrame("Frame", "MyXPBarLanguageList", panel, "BackdropTemplate")
+-- The list itself, opened under the button. It belongs to UIParent, not to
+-- the panel: a click on the panel raises it (SetToplevel) and it would
+-- cover the list, eating the clicks.
+local langList = CreateFrame("Frame", "MyXPBarLanguageList", UIParent, "BackdropTemplate")
 langList:SetFrameStrata("FULLSCREEN_DIALOG")
+langList:SetToplevel(true)
 langList:SetBackdrop(BOX_BACKDROP)
 langList:SetBackdropColor(0, 0, 0, 0.95)
 langList:SetBackdropBorderColor(GOLD[1], GOLD[2], GOLD[3], 1)
 langList:SetSize(LANG_WIDTH, 10 + #ns.LANGUAGES * 20)
-langList:SetPoint("TOPLEFT", langButton, "BOTTOMLEFT", 0, -2)
+-- No gap under the button: crossing it would close the list
+langList:SetPoint("TOPLEFT", langButton, "BOTTOMLEFT", 0, 0)
 langList:EnableMouse(true)
 langList:Hide()
 
@@ -710,9 +714,18 @@ langButton:SetScript("OnClick", function()
     PlayUISound("IG_MAINMENU_OPTION_CHECKBOX_ON")
     langList:SetShown(not langList:IsShown())
 end)
--- Closes once the mouse leaves both the button and the list
-langList:SetScript("OnUpdate", function(self)
-    if not self:IsMouseOver() and not langButton:IsMouseOver() then self:Hide() end
+-- Closes a short moment after the mouse left both the button and the list,
+-- so going from one to the other never closes it
+local LANG_GRACE = 0.6
+local langAway = 0
+langList:SetScript("OnShow", function() langAway = 0 end)
+langList:SetScript("OnUpdate", function(self, elapsed)
+    if self:IsMouseOver(4, -4, -4, 4) or langButton:IsMouseOver(4, -4, -4, 4) then
+        langAway = 0
+        return
+    end
+    langAway = langAway + elapsed
+    if langAway > LANG_GRACE then self:Hide() end
 end)
 panel:HookScript("OnHide", function() langList:Hide() end)
 
