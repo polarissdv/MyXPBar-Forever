@@ -1,5 +1,12 @@
 # MyXPBar - Changelog
 
+## 3.1
+- The percentage on the right of the bar now shows, in gold and in
+  parentheses, where your **finished quests** will take you once turned in
+  (for example `41.9% (45.9%)`). When there is no finished quest waiting,
+  the parentheses go back to the rested XP projection, as before.
+- Thanks to Celai for the idea.
+
 ## 3.0
 - **The addon now speaks 7 languages**: English, French, German, Spanish,
   Portuguese, Russian and Italian.

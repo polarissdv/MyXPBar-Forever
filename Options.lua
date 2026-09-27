@@ -4,7 +4,7 @@ local T = ns.T
 -- =========================================================
 -- STYLE (native WoW look)
 -- =========================================================
-local VERSION = "3.0"
+local VERSION = "3.1"
 local PANEL_WIDTH = 420
 local PAD = 26
 local CONTENT_W = PANEL_WIDTH - PAD * 2

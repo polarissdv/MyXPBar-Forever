@@ -918,17 +918,6 @@ local function UpdateStatus()
     -- Bottom text: rested and / or finished quests
     local subParts = {}
 
-    -- Add projected rested percentage in parentheses
-    if rested > 0 and maxXP > 0 then
-        local restedPct = (rested / maxXP) * 100
-        local projected = pct + restedPct
-        if projected > 100 then projected = 100 end
-        totalString = totalString .. string.format(" (%.1f%%)", projected)
-        if ns.db.showRestedText then
-            tinsert(subParts, string.format("%s: %.1f%%", ns.T("BAR_RESTED"), restedPct))
-        end
-    end
-
     -- Finished quests: a gold part after the XP, and their total
     local questXP = ns.db.showQuestXP and FinishedQuests() or 0
     questBar:SetMinMaxValues(0, maxXP)
@@ -940,7 +929,21 @@ local function UpdateStatus()
         end
         tinsert(subParts, line)
     end
+
+    local restedPct = (rested > 0 and maxXP > 0) and (rested / maxXP) * 100 or 0
+    if restedPct > 0 and ns.db.showRestedText then
+        tinsert(subParts, string.format("%s: %.1f%%", ns.T("BAR_RESTED"), restedPct))
+    end
     SetTextCached(subText, "sub", table.concat(subParts, "  ·  "))
+
+    -- In parentheses: where the finished quests will take you (gold, like
+    -- their part of the bar), or otherwise where the rested XP will
+    if questXP > 0 and maxXP > 0 then
+        local withQuests = math.min(pct + (questXP / maxXP) * 100, 100)
+        totalString = totalString .. string.format(" |cffffd100(%.1f%%)|r", withQuests)
+    elseif restedPct > 0 then
+        totalString = totalString .. string.format(" (%.1f%%)", math.min(pct + restedPct, 100))
+    end
 
     SetTextCached(pctText, "pct", totalString)
     SetTextCached(sessionText, "session", ns.db.showSession and SessionLine(level, currXP, maxXP) or "")
