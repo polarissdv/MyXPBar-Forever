@@ -4,7 +4,7 @@ local T = ns.T
 -- =========================================================
 -- STYLE (native WoW look)
 -- =========================================================
-local VERSION = "2.9"
+local VERSION = "3.0"
 local PANEL_WIDTH = 420
 local PAD = 26
 local CONTENT_W = PANEL_WIDTH - PAD * 2
@@ -30,16 +30,29 @@ local BOX_BACKDROP = {
     insets = { left = 4, right = 4, top = 4, bottom = 4 },
 }
 
+-- The gothic font has no Cyrillic outside the Russian client: those
+-- languages get a font that can show their letters
+local FONT_FALLBACK = "Fonts\\ARIALN.TTF"
+local fonts = {}
+
 local function MakeFont(name, size, outline)
     local font = CreateFont(name)
     font:SetFont(FONT_GOTHIC, size, outline)
     font:SetShadowOffset(1, -1)
     font:SetShadowColor(0, 0, 0, 1)
+    tinsert(fonts, { font = font, size = size, outline = outline })
     return font
 end
 local FontTitle = MakeFont("MyXPBarFontTitle", 30, "OUTLINE")
 local FontSection = MakeFont("MyXPBarFontSection", 17, "OUTLINE")
 local FontSmall = MakeFont("MyXPBarFontSmall", 13, "")
+
+function ns.ApplyFonts()
+    local path = ns.UsesLatinFont() and FONT_GOTHIC or FONT_FALLBACK
+    for _, entry in ipairs(fonts) do
+        pcall(entry.font.SetFont, entry.font, path, entry.size, entry.outline)
+    end
+end
 
 local PRESETS = {
     { key = "VIOLET", r = 0.6,  g = 0.4,  b = 1 },
@@ -629,35 +642,89 @@ OptionCheck("QUEST_XP", "QUEST_XP_DESC", "showQuestXP")
 if checkIndex % 2 == 1 then cursorY = cursorY - 28 end
 cursorY = cursorY - 34
 
--- Language (FR | EN)
+-- Language: a drop-down list of every translation
 local langLabel = panel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
 langLabel:SetPoint("TOPLEFT", PAD, cursorY)
 Localize(langLabel, "LANGUAGE")
 
 local function ApplyLanguage(lang)
     ns.db.language = lang
+    ns.ApplyFonts()
     for _, fs in ipairs(localizedTexts) do fs:SetText(T(fs.l10nKey)) end
     ns.Refresh()
     ns.RefreshOptions()
 end
 
-local langButtons = {}
-for i, lang in ipairs(ns.LANGUAGES) do
-    local b = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
-    b:SetSize(44, 22)
-    b:SetPoint("TOPLEFT", PAD + 110 + (i - 1) * 48, cursorY + 4)
-    b:SetText(string.upper(lang))
-    b.lang = lang
-    b:SetScript("OnClick", function()
-        if ns.db.language == lang then return end
+local LANG_WIDTH = 150
+local langButton = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
+langButton:SetSize(LANG_WIDTH, 22)
+langButton:SetPoint("TOPLEFT", PAD + 110, cursorY + 4)
+
+local langArrow = langButton:CreateTexture(nil, "OVERLAY")
+langArrow:SetSize(12, 12)
+langArrow:SetPoint("RIGHT", -6, 0)
+langArrow:SetTexture(WHITE)
+langArrow:SetVertexColor(GOLD[1], GOLD[2], GOLD[3])
+langArrow:SetRotation(math.rad(45))
+langArrow:SetSize(7, 7)
+
+-- The list itself, opened under the button
+local langList = CreateFrame("Frame", "MyXPBarLanguageList", panel, "BackdropTemplate")
+langList:SetFrameStrata("FULLSCREEN_DIALOG")
+langList:SetBackdrop(BOX_BACKDROP)
+langList:SetBackdropColor(0, 0, 0, 0.95)
+langList:SetBackdropBorderColor(GOLD[1], GOLD[2], GOLD[3], 1)
+langList:SetSize(LANG_WIDTH, 10 + #ns.LANGUAGES * 20)
+langList:SetPoint("TOPLEFT", langButton, "BOTTOMLEFT", 0, -2)
+langList:EnableMouse(true)
+langList:Hide()
+
+local langEntries = {}
+for i, entry in ipairs(ns.LANGUAGES) do
+    local item = CreateFrame("Button", nil, langList)
+    item:SetSize(LANG_WIDTH - 10, 20)
+    item:SetPoint("TOPLEFT", 5, -5 - (i - 1) * 20)
+
+    item.highlight = item:CreateTexture(nil, "BACKGROUND")
+    item.highlight:SetAllPoints()
+    item.highlight:SetColorTexture(GOLD[1], GOLD[2], GOLD[3], 0.25)
+    item.highlight:Hide()
+
+    item.text = item:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    item.text:SetPoint("LEFT", 6, 0)
+    item.text:SetText(entry.name)
+
+    item.key = entry.key
+    item:SetScript("OnEnter", function(self) self.highlight:Show() end)
+    item:SetScript("OnLeave", function(self) self.highlight:Hide() end)
+    item:SetScript("OnClick", function(self)
+        langList:Hide()
+        if ns.db.language == self.key then return end
         PlayUISound("IG_MAINMENU_OPTION_CHECKBOX_ON")
-        ApplyLanguage(lang)
+        ApplyLanguage(self.key)
     end)
-    langButtons[i] = b
+    langEntries[i] = item
 end
+
+langButton:SetScript("OnClick", function()
+    PlayUISound("IG_MAINMENU_OPTION_CHECKBOX_ON")
+    langList:SetShown(not langList:IsShown())
+end)
+-- Closes once the mouse leaves both the button and the list
+langList:SetScript("OnUpdate", function(self)
+    if not self:IsMouseOver() and not langButton:IsMouseOver() then self:Hide() end
+end)
+panel:HookScript("OnHide", function() langList:Hide() end)
+
 tinsert(refreshers, function()
-    for _, b in ipairs(langButtons) do
-        if b.lang == ns.db.language then b:LockHighlight() else b:UnlockHighlight() end
+    local current = ns.db.language or ns.DefaultLanguage()
+    langButton:SetText(ns.LanguageName(current))
+    for _, item in ipairs(langEntries) do
+        if item.key == current then
+            item.text:SetTextColor(GOLD[1], GOLD[2], GOLD[3])
+        else
+            item.text:SetTextColor(1, 1, 1)
+        end
     end
 end)
 cursorY = cursorY - 34
@@ -842,3 +909,5 @@ mm:SetScript("OnLeave", function() GameTooltip:Hide() end)
 
 -- Place the button once the saved settings are loaded
 tinsert(ns.dbReadyCallbacks, ns.UpdateMinimapButton)
+-- The saved language decides which title font can be used
+tinsert(ns.dbReadyCallbacks, ns.ApplyFonts)

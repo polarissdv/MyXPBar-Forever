@@ -7,7 +7,7 @@
 **A clean, lightweight and fully customizable XP bar for World of Warcraft: Forever.**
 
 [![CurseForge](https://img.shields.io/badge/CurseForge-MyXPBar%20Forever-F16436?logo=curseforge&logoColor=white)](https://www.curseforge.com/wow/addons/myxpbar-forever)
-![Version](https://img.shields.io/badge/version-2.9-9966ff)
+![Version](https://img.shields.io/badge/version-3.0-9966ff)
 ![Interface](https://img.shields.io/badge/WoW%3A%20Forever-1.60.x%20(16001)-c8a14a)
 
 </div>
@@ -32,7 +32,8 @@ World of Warcraft style. No libraries, no dependencies.
 - **Rested XP overlay** — a translucent layer shows exactly how far your rested XP will take you.
 - **Mobs-to-level estimate** — how many kills you still need, based on your last XP gain.
 - **Detailed stats** — level, current / max XP, percentage, and projected percentage with rested XP.
-- **English and French** — switch language in one click from the options menu.
+- **7 languages** — English, French, German, Spanish, Portuguese, Russian and Italian, picked from a
+  drop-down in the options menu.
 - **Settings that stick** — position, size, colors, style and options survive a reload, a relog
   and a full restart of the game, even with the Forever beta bug that resets other addons
   (see below).

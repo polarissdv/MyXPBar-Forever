@@ -1,5 +1,17 @@
 # MyXPBar - Changelog
 
+## 3.0
+- **The addon now speaks 7 languages**: English, French, German, Spanish,
+  Portuguese, Russian and Italian.
+- The two FR / EN buttons are replaced by a **drop-down list** with every
+  language, in the Language line of the options menu.
+- The language of your game client is picked automatically the first time,
+  and you can change it at any moment: every text updates right away.
+- Russian gets a font that can show Cyrillic, since the gothic title font
+  of the menu only has it on the Russian client.
+- The new translations were made by the author, not by native speakers:
+  corrections are welcome on the CurseForge page or on GitHub.
+
 ## 2.9
 - New option **XP of finished quests** (off by default): the XP of the
   quests you finished but did not turn in yet shows on the bar in gold, and
