@@ -4,10 +4,13 @@ local T = ns.T
 -- =========================================================
 -- STYLE (native WoW look)
 -- =========================================================
-local VERSION = "3.1"
-local PANEL_WIDTH = 420
+local VERSION = "3.2"
+-- Two columns side by side: the menu stays short enough for any screen
 local PAD = 26
-local CONTENT_W = PANEL_WIDTH - PAD * 2
+local GUTTER = 26
+local CONTENT_W = 362                                  -- Width of one column
+local PANEL_WIDTH = PAD * 2 + CONTENT_W * 2 + GUTTER
+local CONTENT_TOP = -104                               -- Where a column starts
 local WHITE = "Interface\\Buttons\\WHITE8x8"
 local CIRCLE_MASK = "Interface\\CHARACTERFRAME\\TempPortraitAlphaMask"
 local BAR_TEXTURE = "Interface\\TargetingFrame\\UI-StatusBar"
@@ -197,33 +200,64 @@ versionText:SetText("v" .. VERSION .. "  ·  Options")
 local closeButton = CreateFrame("Button", nil, panel, "UIPanelCloseButton")
 closeButton:SetPoint("TOPRIGHT", -6, -6)
 
--- Vertical cursor used to stack widgets
-local cursorY = -104
+-- Each column is a frame holding its own widgets, so the whole block can
+-- be moved in one go: side by side (horizontal) or stacked (vertical).
+local FULL_W = CONTENT_W * 2 + GUTTER
+
+local function MakeColumn(width)
+    local column = CreateFrame("Frame", nil, panel)
+    column:SetSize(width, 10)
+    return column
+end
+
+local columnA = MakeColumn(CONTENT_W)
+local columnB = MakeColumn(CONTENT_W)
+local footer = MakeColumn(FULL_W)
+
+-- Widgets are created in "content", stacked downwards from cursorY
+local content = columnA
+local cursorY = 0
+
+local function FinishColumn()
+    if content then content:SetHeight(math.max(-cursorY, 10)) end
+end
+
+local function StartColumn(index)
+    FinishColumn()
+    content = (index == 1) and columnA or columnB
+    cursorY = 0
+end
+
+local function StartFooter()
+    FinishColumn()
+    content = footer
+    cursorY = 0
+end
 
 -- =========================================================
 -- WIDGETS
 -- =========================================================
 local function Section(key)
     cursorY = cursorY - 8
-    local label = panel:CreateFontString(nil, "OVERLAY")
+    local label = content:CreateFontString(nil, "OVERLAY")
     label:SetFontObject(FontSection)
     label:SetTextColor(GOLD[1], GOLD[2], GOLD[3])
-    label:SetPoint("TOPLEFT", PAD, cursorY)
+    label:SetPoint("TOPLEFT", 0, cursorY)
     Localize(label, key)
 
-    local line = panel:CreateTexture(nil, "ARTWORK")
+    local line = content:CreateTexture(nil, "ARTWORK")
     line:SetHeight(1)
     line:SetPoint("TOPLEFT", label, "TOPRIGHT", 10, -9)
-    line:SetPoint("TOPRIGHT", panel, "TOPLEFT", PANEL_WIDTH - PAD, cursorY - 9)
+    line:SetPoint("TOPRIGHT", content, "TOPLEFT", CONTENT_W, cursorY - 9)
     SetGradientSafe(line, "HORIZONTAL", GOLD[1], GOLD[2], GOLD[3], 0.7, 0)
 
     cursorY = cursorY - 26
 end
 
 local function CreateSlider(key, minV, maxV, step, getValue, setValue, formatValue)
-    local holder = CreateFrame("Frame", nil, panel)
+    local holder = CreateFrame("Frame", nil, content)
     holder:SetSize(CONTENT_W, 42)
-    holder:SetPoint("TOPLEFT", PAD, cursorY)
+    holder:SetPoint("TOPLEFT", 0, cursorY)
     cursorY = cursorY - 44
 
     local label = holder:CreateFontString(nil, "OVERLAY", "GameFontNormal")
@@ -318,9 +352,9 @@ local function OpenColorPicker(r, g, b, callback)
 end
 
 local function CreateColorRow(labelKey, key)
-    local row = CreateFrame("Frame", nil, panel)
+    local row = CreateFrame("Frame", nil, content)
     row:SetSize(CONTENT_W, 26)
-    row:SetPoint("TOPLEFT", PAD, cursorY)
+    row:SetPoint("TOPLEFT", 0, cursorY)
     cursorY = cursorY - 34
 
     local label = row:CreateFontString(nil, "OVERLAY", "GameFontNormal")
@@ -409,9 +443,9 @@ end
 local checkIndex = 0
 local function CreateCheck(labelKey, descKey, getValue, setValue)
     local col = checkIndex % 2
-    local check = CreateFrame("CheckButton", nil, panel, "UICheckButtonTemplate")
+    local check = CreateFrame("CheckButton", nil, content, "UICheckButtonTemplate")
     check:SetSize(24, 24)
-    check:SetPoint("TOPLEFT", PAD + col * (CONTENT_W / 2), cursorY)
+    check:SetPoint("TOPLEFT", col * (CONTENT_W / 2), cursorY)
     if col == 1 then cursorY = cursorY - 28 end
     checkIndex = checkIndex + 1
 
@@ -467,10 +501,11 @@ end
 -- =========================================================
 -- CONTENT
 -- =========================================================
+StartColumn(1)
 Section("SECTION_PREVIEW")
-local previewBox = CreateFrame("Frame", nil, panel, "BackdropTemplate")
+local previewBox = CreateFrame("Frame", nil, content, "BackdropTemplate")
 previewBox:SetSize(CONTENT_W, 64)
-previewBox:SetPoint("TOPLEFT", PAD, cursorY)
+previewBox:SetPoint("TOPLEFT", 0, cursorY)
 previewBox:SetBackdrop(BOX_BACKDROP)
 previewBox:SetBackdropColor(0, 0, 0, 0.7)
 previewBox:SetBackdropBorderColor(0.6, 0.5, 0.28, 1)
@@ -584,12 +619,12 @@ local STYLES = {
 local styleButtons = {}
 for i, style in ipairs(STYLES) do
     local col, row = (i - 1) % 3, math.floor((i - 1) / 3)
-    local b = CreateButton(panel, style.key, CONTENT_W / 3 - 6, 24, function()
+    local b = CreateButton(content, style.key, CONTENT_W / 3 - 6, 24, function()
         ns.db.style = style.id
         ns.Refresh()
         ns.RefreshOptions()
     end)
-    b:SetPoint("TOPLEFT", PAD + col * (CONTENT_W / 3), cursorY - row * 28)
+    b:SetPoint("TOPLEFT", col * (CONTENT_W / 3), cursorY - row * 28)
     b.style = style.id
     styleButtons[i] = b
 end
@@ -617,6 +652,7 @@ CreateSlider("TARGET_LEVEL", 0, 60, 1,
     function(v) ns.db.targetLevel = v; ns.Refresh() end,
     function(v) return v == 0 and T("TARGET_NEXT") or (T("BAR_LEVEL") .. " " .. v) end)
 
+StartColumn(2)
 Section("SECTION_COLORS")
 CreateColorRow("XP_COLOR", "xpColor")
 CreateColorRow("RESTED_COLOR", "restedColor")
@@ -639,12 +675,15 @@ OptionCheck("SHOW_SESSION", "SHOW_SESSION_DESC", "showSession")
 OptionCheck("FULL_WIDTH", "FULL_WIDTH_DESC", "fullWidth")
 OptionCheck("REP_HOVER", "REP_HOVER_DESC", "showRepHover")
 OptionCheck("QUEST_XP", "QUEST_XP_DESC", "showQuestXP")
+OptionCheck("HORIZONTAL_MENU", "HORIZONTAL_MENU_DESC", "horizontalMenu", function() ns.LayoutOptions() end)
 if checkIndex % 2 == 1 then cursorY = cursorY - 28 end
 cursorY = cursorY - 34
 
+StartFooter()
+
 -- Language: a drop-down list of every translation
-local langLabel = panel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-langLabel:SetPoint("TOPLEFT", PAD, cursorY)
+local langLabel = footer:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+langLabel:SetPoint("TOPLEFT", 0, cursorY)
 Localize(langLabel, "LANGUAGE")
 
 local function ApplyLanguage(lang)
@@ -656,9 +695,9 @@ local function ApplyLanguage(lang)
 end
 
 local LANG_WIDTH = 150
-local langButton = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
+local langButton = CreateFrame("Button", nil, footer, "UIPanelButtonTemplate")
 langButton:SetSize(LANG_WIDTH, 22)
-langButton:SetPoint("TOPLEFT", PAD + 110, cursorY + 4)
+langButton:SetPoint("TOPLEFT", 110, cursorY + 4)
 
 local langArrow = langButton:CreateTexture(nil, "OVERLAY")
 langArrow:SetSize(12, 12)
@@ -743,16 +782,17 @@ end)
 cursorY = cursorY - 34
 
 -- Footer
-local footerOrnament = Ornament(panel, CONTENT_W)
-footerOrnament:SetPoint("TOP", panel, "TOP", 0, cursorY)
+local FULL_W = CONTENT_W * 2 + GUTTER
+local footerOrnament = Ornament(footer, FULL_W)
+footerOrnament:SetPoint("TOP", footer, "TOP", 0, cursorY)
 cursorY = cursorY - 18
 
-local resetPosBtn = CreateButton(panel, "RESET_POSITION", CONTENT_W / 2 - 6, 26, function()
+local resetPosBtn = CreateButton(footer, "RESET_POSITION", FULL_W / 2 - 6, 26, function()
     ns.ResetPosition()
 end)
-resetPosBtn:SetPoint("TOPLEFT", PAD, cursorY)
+resetPosBtn:SetPoint("TOPLEFT", 0, cursorY)
 
-local resetAllBtn = CreateButton(panel, "RESET_ALL", CONTENT_W / 2 - 6, 26, function()
+local resetAllBtn = CreateButton(footer, "RESET_ALL", FULL_W / 2 - 6, 26, function()
     local language = ns.db.language
     local angle = ns.db.minimap.angle
     for k in pairs(ns.db) do ns.db[k] = nil end
@@ -763,19 +803,19 @@ local resetAllBtn = CreateButton(panel, "RESET_ALL", CONTENT_W / 2 - 6, 26, func
     ns.UpdateMinimapButton()
     ns.RefreshOptions()
 end)
-resetAllBtn:SetPoint("TOPRIGHT", -PAD, cursorY)
+resetAllBtn:SetPoint("TOPRIGHT", footer, "TOPRIGHT", 0, cursorY)
 cursorY = cursorY - 36
 
-local hint = panel:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-hint:SetPoint("TOP", panel, "TOP", 0, cursorY)
-hint:SetWidth(CONTENT_W)
+local hint = footer:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+hint:SetPoint("TOP", footer, "TOP", 0, cursorY)
+hint:SetWidth(FULL_W)
 Localize(hint, "HINT")
 cursorY = cursorY - 36
 
-local signature = panel:CreateFontString(nil, "OVERLAY")
+local signature = footer:CreateFontString(nil, "OVERLAY")
 signature:SetFontObject(FontSmall)
 signature:SetTextColor(0.75, 0.62, 0.35)
-signature:SetPoint("TOP", panel, "TOP", 0, cursorY)
+signature:SetPoint("TOP", footer, "TOP", 0, cursorY)
 signature:SetText(AUTHOR)
 local sigLeft = Diamond(panel, 5, "OVERLAY")
 sigLeft:SetPoint("RIGHT", signature, "LEFT", -8, 0)
@@ -783,7 +823,43 @@ local sigRight = Diamond(panel, 5, "OVERLAY")
 sigRight:SetPoint("LEFT", signature, "RIGHT", 8, 0)
 cursorY = cursorY - 26
 
-panel:SetHeight(-cursorY)
+FinishColumn()
+
+-- =========================================================
+-- LAYOUT: the two columns side by side, or one under the other
+-- =========================================================
+local GAP = 14 -- Between the columns and the footer
+
+function ns.LayoutOptions()
+    local horizontal = ns.db.horizontalMenu
+    columnA:ClearAllPoints()
+    columnB:ClearAllPoints()
+    footer:ClearAllPoints()
+    columnA:SetPoint("TOPLEFT", panel, "TOPLEFT", PAD, CONTENT_TOP)
+
+    local footerWidth, contentHeight
+    if horizontal then
+        columnB:SetPoint("TOPLEFT", panel, "TOPLEFT", PAD + CONTENT_W + GUTTER, CONTENT_TOP)
+        footerWidth = FULL_W
+        contentHeight = math.max(columnA:GetHeight(), columnB:GetHeight())
+    else
+        columnB:SetPoint("TOPLEFT", columnA, "BOTTOMLEFT", 0, -GAP)
+        footerWidth = CONTENT_W
+        contentHeight = columnA:GetHeight() + GAP + columnB:GetHeight()
+    end
+
+    footer:SetWidth(footerWidth)
+    footer:SetPoint("TOPLEFT", panel, "TOPLEFT", PAD, CONTENT_TOP - contentHeight - GAP)
+
+    -- The footer widgets follow the width of the menu
+    footerOrnament:SetWidth(footerWidth)
+    resetPosBtn:SetWidth(footerWidth / 2 - 6)
+    resetAllBtn:SetWidth(footerWidth / 2 - 6)
+    hint:SetWidth(footerWidth)
+
+    panel:SetSize(PAD * 2 + footerWidth,
+        -CONTENT_TOP + contentHeight + GAP + footer:GetHeight() + 16)
+end
 
 -- =========================================================
 -- OPEN / CLOSE
@@ -924,3 +1000,5 @@ mm:SetScript("OnLeave", function() GameTooltip:Hide() end)
 tinsert(ns.dbReadyCallbacks, ns.UpdateMinimapButton)
 -- The saved language decides which title font can be used
 tinsert(ns.dbReadyCallbacks, ns.ApplyFonts)
+-- The saved layout (horizontal or vertical) is applied once settings load
+tinsert(ns.dbReadyCallbacks, function() ns.LayoutOptions() end)

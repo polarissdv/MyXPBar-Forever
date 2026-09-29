@@ -1,5 +1,12 @@
 # MyXPBar - Changelog
 
+## 3.2
+- The options menu is now **two columns side by side** instead of one very
+  tall column: it no longer runs from the top to the bottom of the screen.
+  Same look, same ornaments, just a better layout.
+- New **Wide options menu** option: uncheck it to get the old narrow menu
+  in one column.
+
 ## 3.1
 - The percentage on the right of the bar now shows, in gold and in
   parentheses, where your **finished quests** will take you once turned in

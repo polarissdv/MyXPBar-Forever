@@ -27,6 +27,7 @@ ns.defaults = {
     showRepBar = false,  -- A thin reputation bar under the XP bar
     showSession = true,  -- XP per hour and time left under the bar
     showQuestXP = false, -- XP of the finished quests waiting in the quest log
+    horizontalMenu = true, -- Options menu in two columns instead of one tall one
     targetLevel = 0,     -- 0: next level
     xpPerLevel = {},     -- Learned XP needed per level, for the estimate
     point = { "CENTER", "CENTER", 0, -200 },
@@ -989,6 +990,7 @@ local FLAG_FIELDS = {
     "showRestedText", "smooth", "showGains", "showMinimap",
     "fullWidth", "showRepHover", -- 2.7: missing in older copies, defaults apply
     "showRepBar", "showSession", -- 2.8
+    "horizontalMenu", -- 3.2
     "showQuestXP", -- 2.9
 }
 
