@@ -4,7 +4,7 @@ local T = ns.T
 -- =========================================================
 -- STYLE (native WoW look)
 -- =========================================================
-local VERSION = "3.2"
+local VERSION = "3.3"
 -- Two columns side by side: the menu stays short enough for any screen
 local PAD = 26
 local GUTTER = 26

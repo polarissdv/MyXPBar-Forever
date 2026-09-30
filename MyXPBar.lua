@@ -165,11 +165,12 @@ mainFrame:SetMovable(true)
 mainFrame:SetClampedToScreen(true)
 ns.mainFrame = mainFrame
 
--- Dragging logic (Shift + Left Click, or free drag while the options menu is open)
+-- Dragging logic: the lock is the only thing that decides. "Unlocked" used to
+-- still need Shift, which made the unlock message a lie and left players stuck.
 mainFrame:RegisterForDrag("LeftButton")
 mainFrame:SetScript("OnDragStart", function(self)
     if ns.db.locked then return end
-    if IsShiftKeyDown() or ns.previewing then self:StartMoving() end
+    self:StartMoving()
 end)
 mainFrame:SetScript("OnDragStop", function(self)
     self:StopMovingOrSizing()

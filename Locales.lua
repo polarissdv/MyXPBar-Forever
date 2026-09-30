@@ -34,7 +34,7 @@ local L = {
         CUSTOM_COLOR = "Custom color",
         CUSTOM_COLOR_DESC = "Click to open the color wheel.",
         LOCK = "Lock the bar",
-        LOCK_DESC = "Prevents moving the bar by accident.",
+        LOCK_DESC = "Prevents moving the bar by accident. Unchecked, drag the bar to move it.",
         HIDE_BLIZZARD = "Hide Blizzard XP bar",
         HIDE_BLIZZARD_DESC = "Hides the default XP bar at the bottom of the screen.",
         SOUND = "Sound on XP gain",
@@ -73,7 +73,7 @@ local L = {
         REP_NONE_DESC = "In the Reputation panel, check \"Show as Experience Bar\" for a faction.",
         RESET_POSITION = "Recenter the bar",
         RESET_ALL = "Reset everything",
-        HINT = "Menu open: drag the bar directly to move it.\nOtherwise: Shift + left click.  ·  Command: /mxp",
+        HINT = "Drag the bar to move it, unless it is locked.  ·  Command: /mxp",
 
         -- Color names
         VIOLET = "Purple", BLUE = "Blue", CYAN = "Cyan", GREEN = "Green",
@@ -87,7 +87,7 @@ local L = {
         TT_RIGHT_CLICK = "|cffffffffRight click|r: lock / unlock",
         TT_DRAG = "|cffffffffDrag|r: move this button",
         CHAT_LOCKED = "bar locked.",
-        CHAT_UNLOCKED = "bar unlocked.",
+        CHAT_UNLOCKED = "bar unlocked: drag it to move it.",
     },
 
     fr = {
@@ -116,7 +116,7 @@ local L = {
         CUSTOM_COLOR = "Couleur personnalisée",
         CUSTOM_COLOR_DESC = "Clique pour ouvrir la roue des couleurs.",
         LOCK = "Verrouiller la barre",
-        LOCK_DESC = "Empêche de déplacer la barre par erreur.",
+        LOCK_DESC = "Empêche de déplacer la barre par erreur. Décochée, glisse la barre pour la déplacer.",
         HIDE_BLIZZARD = "Masquer barre Blizzard",
         HIDE_BLIZZARD_DESC = "Cache la barre d'XP d'origine en bas de l'écran.",
         SOUND = "Son à chaque gain d'XP",
@@ -155,7 +155,7 @@ local L = {
         REP_NONE_DESC = "Dans le panneau Réputation, coche « Afficher dans la barre d'expérience » pour une faction.",
         RESET_POSITION = "Recentrer la barre",
         RESET_ALL = "Tout réinitialiser",
-        HINT = "Menu ouvert : glisse la barre directement pour la déplacer.\nSinon : Shift + clic gauche.  ·  Commande : /mxp",
+        HINT = "Glisse la barre pour la déplacer, sauf si elle est verrouillée.  ·  Commande : /mxp",
 
         VIOLET = "Violet", BLUE = "Bleu", CYAN = "Cyan", GREEN = "Vert",
         GOLD = "Or", ORANGE = "Orange", RED = "Rouge", PINK = "Rose",
@@ -167,7 +167,7 @@ local L = {
         TT_RIGHT_CLICK = "|cffffffffClic droit|r : verrouiller / déverrouiller",
         TT_DRAG = "|cffffffffGlisser|r : déplacer ce bouton",
         CHAT_LOCKED = "barre verrouillée.",
-        CHAT_UNLOCKED = "barre déverrouillée.",
+        CHAT_UNLOCKED = "barre déverrouillée : glisse-la pour la déplacer.",
     },
 
     de = {
@@ -196,7 +196,7 @@ local L = {
         CUSTOM_COLOR = "Eigene Farbe",
         CUSTOM_COLOR_DESC = "Klicke, um den Farbkreis zu öffnen.",
         LOCK = "Leiste sperren",
-        LOCK_DESC = "Verhindert versehentliches Verschieben der Leiste.",
+        LOCK_DESC = "Verhindert versehentliches Verschieben der Leiste. Nicht angehakt: Leiste ziehen, um sie zu verschieben.",
         HIDE_BLIZZARD = "Blizzard-EP-Leiste ausblenden",
         HIDE_BLIZZARD_DESC = "Blendet die normale EP-Leiste am unteren Bildschirmrand aus.",
         SOUND = "Ton bei EP-Gewinn",
@@ -235,7 +235,7 @@ local L = {
         REP_NONE_DESC = "Aktiviere im Ruf-Fenster \"Als Erfahrungsleiste anzeigen\" für eine Fraktion.",
         RESET_POSITION = "Leiste zentrieren",
         RESET_ALL = "Alles zurücksetzen",
-        HINT = "Menü offen: ziehe die Leiste direkt, um sie zu verschieben.\nSonst: Umschalt + Linksklick.  ·  Befehl: /mxp",
+        HINT = "Ziehe die Leiste, um sie zu verschieben, sofern sie nicht gesperrt ist.  ·  Befehl: /mxp",
 
         VIOLET = "Violett", BLUE = "Blau", CYAN = "Türkis", GREEN = "Grün",
         GOLD = "Gold", ORANGE = "Orange", RED = "Rot", PINK = "Rosa",
@@ -247,7 +247,7 @@ local L = {
         TT_RIGHT_CLICK = "|cffffffffRechtsklick|r: sperren / entsperren",
         TT_DRAG = "|cffffffffZiehen|r: diesen Knopf verschieben",
         CHAT_LOCKED = "Leiste gesperrt.",
-        CHAT_UNLOCKED = "Leiste entsperrt.",
+        CHAT_UNLOCKED = "Leiste entsperrt: zum Verschieben ziehen.",
     },
 
     es = {
@@ -276,7 +276,7 @@ local L = {
         CUSTOM_COLOR = "Color personalizado",
         CUSTOM_COLOR_DESC = "Haz clic para abrir la rueda de colores.",
         LOCK = "Bloquear la barra",
-        LOCK_DESC = "Evita mover la barra por error.",
+        LOCK_DESC = "Evita mover la barra por error. Sin marcar, arrastra la barra para moverla.",
         HIDE_BLIZZARD = "Ocultar barra de Blizzard",
         HIDE_BLIZZARD_DESC = "Oculta la barra de XP original en la parte inferior de la pantalla.",
         SOUND = "Sonido al ganar XP",
@@ -315,7 +315,7 @@ local L = {
         REP_NONE_DESC = "En el panel de Reputación, marca \"Mostrar como barra de experiencia\" en una facción.",
         RESET_POSITION = "Centrar la barra",
         RESET_ALL = "Restablecer todo",
-        HINT = "Menú abierto: arrastra la barra directamente para moverla.\nSi no: Mayús + clic izquierdo.  ·  Comando: /mxp",
+        HINT = "Arrastra la barra para moverla, salvo si está bloqueada.  ·  Comando: /mxp",
 
         VIOLET = "Morado", BLUE = "Azul", CYAN = "Cian", GREEN = "Verde",
         GOLD = "Dorado", ORANGE = "Naranja", RED = "Rojo", PINK = "Rosa",
@@ -327,7 +327,7 @@ local L = {
         TT_RIGHT_CLICK = "|cffffffffClic derecho|r: bloquear / desbloquear",
         TT_DRAG = "|cffffffffArrastrar|r: mover este botón",
         CHAT_LOCKED = "barra bloqueada.",
-        CHAT_UNLOCKED = "barra desbloqueada.",
+        CHAT_UNLOCKED = "barra desbloqueada: arrástrala para moverla.",
     },
 
     pt = {
@@ -356,7 +356,7 @@ local L = {
         CUSTOM_COLOR = "Cor personalizada",
         CUSTOM_COLOR_DESC = "Clique para abrir a roda de cores.",
         LOCK = "Travar a barra",
-        LOCK_DESC = "Impede mover a barra por engano.",
+        LOCK_DESC = "Impede mover a barra por engano. Desmarcado, arraste a barra para movê-la.",
         HIDE_BLIZZARD = "Ocultar barra da Blizzard",
         HIDE_BLIZZARD_DESC = "Oculta a barra de XP original na parte de baixo da tela.",
         SOUND = "Som ao ganhar XP",
@@ -395,7 +395,7 @@ local L = {
         REP_NONE_DESC = "No painel de Reputação, marque \"Mostrar como barra de experiência\" em uma facção.",
         RESET_POSITION = "Centralizar a barra",
         RESET_ALL = "Redefinir tudo",
-        HINT = "Menu aberto: arraste a barra diretamente para movê-la.\nCaso contrário: Shift + clique esquerdo.  ·  Comando: /mxp",
+        HINT = "Arraste a barra para movê-la, a menos que esteja travada.  ·  Comando: /mxp",
 
         VIOLET = "Roxo", BLUE = "Azul", CYAN = "Ciano", GREEN = "Verde",
         GOLD = "Dourado", ORANGE = "Laranja", RED = "Vermelho", PINK = "Rosa",
@@ -407,7 +407,7 @@ local L = {
         TT_RIGHT_CLICK = "|cffffffffClique direito|r: travar / destravar",
         TT_DRAG = "|cffffffffArrastar|r: mover este botão",
         CHAT_LOCKED = "barra travada.",
-        CHAT_UNLOCKED = "barra destravada.",
+        CHAT_UNLOCKED = "barra destravada: arraste-a para movê-la.",
     },
 
     ru = {
@@ -436,7 +436,7 @@ local L = {
         CUSTOM_COLOR = "Свой цвет",
         CUSTOM_COLOR_DESC = "Нажми, чтобы открыть палитру.",
         LOCK = "Закрепить полосу",
-        LOCK_DESC = "Не даёт случайно сдвинуть полосу.",
+        LOCK_DESC = "Не даёт случайно сдвинуть полосу. Если снять галочку, полосу можно тянуть мышью.",
         HIDE_BLIZZARD = "Скрыть полосу Blizzard",
         HIDE_BLIZZARD_DESC = "Скрывает обычную полосу опыта внизу экрана.",
         SOUND = "Звук при получении опыта",
@@ -475,7 +475,7 @@ local L = {
         REP_NONE_DESC = "В окне репутации отметь у фракции \"Показывать на полосе опыта\".",
         RESET_POSITION = "Вернуть полосу в центр",
         RESET_ALL = "Сбросить всё",
-        HINT = "Меню открыто: тяни полосу мышью, чтобы её передвинуть.\nИначе: Shift + левый клик.  ·  Команда: /mxp",
+        HINT = "Тяни полосу мышью, чтобы её передвинуть, если она не закреплена.  ·  Команда: /mxp",
 
         VIOLET = "Фиолетовый", BLUE = "Синий", CYAN = "Голубой", GREEN = "Зелёный",
         GOLD = "Золотой", ORANGE = "Оранжевый", RED = "Красный", PINK = "Розовый",
@@ -487,7 +487,7 @@ local L = {
         TT_RIGHT_CLICK = "|cffffffffПравый клик|r: закрепить / открепить",
         TT_DRAG = "|cffffffffПеретащить|r: переместить кнопку",
         CHAT_LOCKED = "полоса закреплена.",
-        CHAT_UNLOCKED = "полоса откреплена.",
+        CHAT_UNLOCKED = "полоса откреплена: тяни её мышью.",
     },
 
     it = {
@@ -516,7 +516,7 @@ local L = {
         CUSTOM_COLOR = "Colore personalizzato",
         CUSTOM_COLOR_DESC = "Clicca per aprire la ruota dei colori.",
         LOCK = "Blocca la barra",
-        LOCK_DESC = "Evita di spostare la barra per sbaglio.",
+        LOCK_DESC = "Evita di spostare la barra per sbaglio. Non spuntata, trascina la barra per spostarla.",
         HIDE_BLIZZARD = "Nascondi barra Blizzard",
         HIDE_BLIZZARD_DESC = "Nasconde la barra PE originale in fondo allo schermo.",
         SOUND = "Suono a ogni guadagno di PE",
@@ -555,7 +555,7 @@ local L = {
         REP_NONE_DESC = "Nel pannello Reputazione, spunta \"Mostra come barra dell'esperienza\" per una fazione.",
         RESET_POSITION = "Centra la barra",
         RESET_ALL = "Reimposta tutto",
-        HINT = "Menu aperto: trascina la barra per spostarla.\nAltrimenti: Maiusc + clic sinistro.  ·  Comando: /mxp",
+        HINT = "Trascina la barra per spostarla, a meno che non sia bloccata.  ·  Comando: /mxp",
 
         VIOLET = "Viola", BLUE = "Blu", CYAN = "Ciano", GREEN = "Verde",
         GOLD = "Oro", ORANGE = "Arancione", RED = "Rosso", PINK = "Rosa",
@@ -567,7 +567,7 @@ local L = {
         TT_RIGHT_CLICK = "|cffffffffClic destro|r: blocca / sblocca",
         TT_DRAG = "|cffffffffTrascina|r: sposta questo pulsante",
         CHAT_LOCKED = "barra bloccata.",
-        CHAT_UNLOCKED = "barra sbloccata.",
+        CHAT_UNLOCKED = "barra sbloccata: trascinala per spostarla.",
     },
 }
 

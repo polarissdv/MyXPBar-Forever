@@ -1,5 +1,14 @@
 # MyXPBar - Changelog
 
+## 3.3
+- **Moving the bar now works the way the unlock message says it does.**
+  Unlocking it was not enough: you also had to hold Shift, or keep the
+  options menu open, and nothing on screen said so. Unlocked now simply
+  means draggable. Shift still works, it is just no longer required.
+- The lock description, the unlock message in the chat and the hint at the
+  bottom of the options say what to do, in all 7 languages.
+- Thanks to the player who reported being unable to move the bar.
+
 ## 3.2
 - The options menu is now **two columns side by side** instead of one very
   tall column: it no longer runs from the top to the bottom of the screen.
