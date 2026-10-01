@@ -9,6 +9,7 @@
 [![CurseForge](https://img.shields.io/badge/CurseForge-MyXPBar%20Forever-F16436?logo=curseforge&logoColor=white)](https://www.curseforge.com/wow/addons/myxpbar-forever)
 ![Version](https://img.shields.io/badge/version-3.3-9966ff)
 ![Interface](https://img.shields.io/badge/WoW%3A%20Forever-1.60.x%20(16001)-c8a14a)
+[![Support](https://img.shields.io/badge/Support-TipeeeStream-ff7b00)](https://www.tipeeestream.com/polarzz88/)
 
 </div>
 
@@ -112,6 +113,12 @@ taken, a chat message tells you.
 
 See [CHANGELOG.md](CHANGELOG.md).
 
+## Support
+
+MyXPBar Forever is free, and it stays free and complete. If it made your bars nicer and you
+feel like saying thanks, you can leave a tip on
+**[TipeeeStream](https://www.tipeeestream.com/polarzz88/)**. Entirely optional.
+
 ## License
 
 Free to use and modify. If you share a modified version, please credit the original addon.
@@ -120,6 +127,6 @@ Free to use and modify. If you share a modified version, please credit the origi
 
 <div align="center">
 
-Made by **Polarz141** · [CurseForge](https://www.curseforge.com/wow/addons/myxpbar-forever)
+Made by **Polarz141** · [CurseForge](https://www.curseforge.com/wow/addons/myxpbar-forever) · [Support me](https://www.tipeeestream.com/polarzz88/)
 
 </div>
