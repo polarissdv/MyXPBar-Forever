@@ -8,6 +8,43 @@ local BAR_TEXTURE = "Interface\\TargetingFrame\\UI-StatusBar"
 local FALLBACK_MAX_LEVEL = 60 -- Only used if the game can't tell the real max level
 local RESTED_ALPHA = 0.5
 
+-- Bar textures. The first one is the game's own; the others ship with the
+-- addon, drawn in grey so the colour chosen in the options shows through.
+-- They are listed in the order the options show them.
+local TEXTURE_DIR = "Interface\\AddOns\\MyXPBar\\Media\\textures\\"
+ns.TEXTURES = {
+    { id = "default", key = "TEXTURE_DEFAULT", file = BAR_TEXTURE },
+    { id = "glaze", key = "TEXTURE_GLAZE" },
+    { id = "satin", key = "TEXTURE_SATIN" },
+    { id = "minimal", key = "TEXTURE_MINIMAL" },
+    { id = "glass", key = "TEXTURE_GLASS" },
+    { id = "bevel", key = "TEXTURE_BEVEL" },
+    { id = "tube", key = "TEXTURE_TUBE" },
+    { id = "brushed", key = "TEXTURE_BRUSHED" },
+    { id = "linen", key = "TEXTURE_LINEN" },
+    { id = "diagonal", key = "TEXTURE_DIAGONAL" },
+    { id = "ember", key = "TEXTURE_EMBER" },
+}
+for _, entry in ipairs(ns.TEXTURES) do
+    entry.file = entry.file or (TEXTURE_DIR .. entry.id)
+end
+
+-- The entry of a texture id, or the game's own one
+function ns.TextureEntry(id)
+    for _, entry in ipairs(ns.TEXTURES) do
+        if entry.id == id then return entry end
+    end
+    return ns.TEXTURES[1]
+end
+
+-- The file of a texture id, falling back to the game's own one
+function ns.TextureFile(id)
+    for _, entry in ipairs(ns.TEXTURES) do
+        if entry.id == id then return entry.file end
+    end
+    return BAR_TEXTURE
+end
+
 ns.defaults = {
     width = 500,
     height = 24,
@@ -22,6 +59,7 @@ ns.defaults = {
     smooth = true,     -- Animated bar fill
     showGains = true,  -- Floating "+245 XP"
     style = "classic", -- classic | gold | segments | thin | spark | restedbar
+    texture = "default", -- Bar texture, see ns.TEXTURES
     fullWidth = false,   -- Stretch from one screen edge to the other (width is ignored)
     showRepHover = true, -- Mouse over the bar: tracked reputation
     showRepBar = false,  -- A thin reputation bar under the XP bar
@@ -520,6 +558,17 @@ function ns.ApplyLayout()
         valueText:SetPoint("CENTER", xpBar, "CENTER", 0, 0)
         pctText:SetPoint("RIGHT", xpBar, "RIGHT", -5, 0)
     end
+
+    -- Bar texture. SetStatusBarTexture drops the colour of a bar, so every
+    -- colour is set again right below.
+    local texture = ns.TextureFile(db.texture)
+    xpBar:SetStatusBarTexture(texture)
+    restedBar:SetStatusBarTexture(texture)
+    questBar:SetStatusBarTexture(texture)
+    underRested:SetStatusBarTexture(texture)
+    repBar:SetStatusBarTexture(texture)
+    repStrip:SetStatusBarTexture(texture)
+    questBar:SetStatusBarColor(1, 0.75, 0.1, 0.75)
 
     local c = db.xpColor
     xpBar:SetStatusBarColor(c.r, c.g, c.b, 1)
@@ -1080,6 +1129,7 @@ local function EncodeSettings(db)
         string.format("%d", math.floor(db.minimap.angle + 0.5)),
         db.language or "",
         string.format("%d", math.floor(db.targetLevel or 0)), -- 2.8, appended
+        db.texture or "default", -- 3.5, appended
     }, ";")
 end
 
@@ -1111,6 +1161,8 @@ local function DecodeSettings(data)
         minimap = { angle = angle },
         language = f[15] ~= "" and f[15] or nil,
         targetLevel = tonumber(f[16]), -- nil in copies written before 2.8
+        -- nil in copies written before 3.5: the default texture stays
+        texture = f[17] and f[17]:match("^%a+$") or nil,
     }
     for i, key in ipairs(FLAG_FIELDS) do
         local bit = f[13]:sub(i, i)

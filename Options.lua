@@ -4,7 +4,7 @@ local T = ns.T
 -- =========================================================
 -- STYLE (native WoW look)
 -- =========================================================
-local VERSION = "3.4"
+local VERSION = "3.5"
 -- Two columns side by side: the menu stays short enough for any screen
 local PAD = 26
 local GUTTER = 26
@@ -571,6 +571,11 @@ local function RefreshPreview()
     previewBg:SetAllPoints(previewXP)
     previewBg:SetColorTexture(0, 0, 0, db.bgAlpha)
 
+    local texture = ns.TextureFile(db.texture)
+    previewXP:SetStatusBarTexture(texture)
+    previewRested:SetStatusBarTexture(texture)
+    previewUnder:SetStatusBarTexture(texture)
+
     local c, rc = db.xpColor, db.restedColor
     previewXP:SetStatusBarColor(c.r, c.g, c.b, 1)
     previewRested:SetStatusBarColor(rc.r, rc.g, rc.b, 0.5)
@@ -632,6 +637,118 @@ cursorY = cursorY - 62
 tinsert(refreshers, function()
     for _, b in ipairs(styleButtons) do
         if b.style == ns.db.style then b:LockHighlight() else b:UnlockHighlight() end
+    end
+end)
+
+-- Bar texture: a drop-down showing each texture under its name. Same shape
+-- as the language one at the bottom of the menu, including the list living
+-- in UIParent (the panel is toplevel and would cover it, eating the clicks).
+Section("SECTION_TEXTURE")
+local TEX_W, TEX_ROW = CONTENT_W, 24
+
+local function PaintSwatch(fill, entry, chosen)
+    local c = ns.db.xpColor
+    fill:SetTexture(entry.file)
+    fill:SetVertexColor(c.r, c.g, c.b, chosen and 0.95 or 0.55)
+end
+
+local texButton = CreateFrame("Button", nil, content)
+texButton:SetSize(TEX_W, TEX_ROW)
+texButton:SetPoint("TOPLEFT", 0, cursorY)
+texButton.fill = texButton:CreateTexture(nil, "ARTWORK")
+texButton.fill:SetPoint("TOPLEFT", 1, -1)
+texButton.fill:SetPoint("BOTTOMRIGHT", -1, 1)
+texButton.edge = CreateFrame("Frame", nil, texButton, "BackdropTemplate")
+texButton.edge:SetAllPoints()
+texButton.edge:SetBackdrop({ edgeFile = WHITE, edgeSize = 1 })
+texButton.edge:SetBackdropBorderColor(GOLD[1], GOLD[2], GOLD[3], 0.8)
+texButton.label = texButton:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+texButton.label:SetPoint("LEFT", 8, 0)
+texButton.label:SetShadowOffset(1, -1)
+texButton.label:SetShadowColor(0, 0, 0, 1)
+
+local texArrow = texButton:CreateTexture(nil, "OVERLAY")
+texArrow:SetSize(7, 7)
+texArrow:SetPoint("RIGHT", -8, 0)
+texArrow:SetTexture(WHITE)
+texArrow:SetVertexColor(GOLD[1], GOLD[2], GOLD[3])
+texArrow:SetRotation(math.rad(45))
+
+local texList = CreateFrame("Frame", "MyXPBarTextureList", UIParent, "BackdropTemplate")
+texList:SetFrameStrata("FULLSCREEN_DIALOG")
+texList:SetToplevel(true)
+texList:SetBackdrop(BOX_BACKDROP)
+texList:SetBackdropColor(0, 0, 0, 0.95)
+texList:SetBackdropBorderColor(GOLD[1], GOLD[2], GOLD[3], 1)
+texList:SetSize(TEX_W, 10 + #ns.TEXTURES * TEX_ROW)
+texList:SetPoint("TOPLEFT", texButton, "BOTTOMLEFT", 0, 0)
+texList:EnableMouse(true)
+texList:Hide()
+
+local texEntries = {}
+for i, entry in ipairs(ns.TEXTURES) do
+    local item = CreateFrame("Button", nil, texList)
+    item:SetSize(TEX_W - 10, TEX_ROW - 2)
+    item:SetPoint("TOPLEFT", 5, -5 - (i - 1) * TEX_ROW)
+
+    item.fill = item:CreateTexture(nil, "ARTWORK")
+    item.fill:SetAllPoints()
+
+    item.highlight = item:CreateTexture(nil, "OVERLAY")
+    item.highlight:SetAllPoints()
+    item.highlight:SetColorTexture(1, 1, 1, 0.18)
+    item.highlight:Hide()
+
+    item.text = item:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    item.text:SetPoint("LEFT", 8, 0)
+    item.text:SetShadowOffset(1, -1)
+    item.text:SetShadowColor(0, 0, 0, 1)
+    Localize(item.text, entry.key)
+
+    item.id = entry.id
+    item.entry = entry
+    item:SetScript("OnEnter", function(self) self.highlight:Show() end)
+    item:SetScript("OnLeave", function(self) self.highlight:Hide() end)
+    item:SetScript("OnClick", function(self)
+        texList:Hide()
+        if ns.db.texture == self.id then return end
+        PlayUISound("IG_MAINMENU_OPTION_CHECKBOX_ON")
+        ns.db.texture = self.id
+        ns.Refresh()
+        ns.RefreshOptions()
+    end)
+    texEntries[i] = item
+end
+
+texButton:SetScript("OnClick", function()
+    PlayUISound("IG_MAINMENU_OPTION_CHECKBOX_ON")
+    texList:SetShown(not texList:IsShown())
+end)
+
+-- Closes a short moment after the mouse left both the button and the list,
+-- so going from one to the other never closes it
+local TEX_GRACE = 0.6
+local texAway = 0
+texList:SetScript("OnShow", function() texAway = 0 end)
+texList:SetScript("OnUpdate", function(self, elapsed)
+    if self:IsMouseOver(4, -4, -4, 4) or texButton:IsMouseOver(4, -4, -4, 4) then
+        texAway = 0
+        return
+    end
+    texAway = texAway + elapsed
+    if texAway > TEX_GRACE then self:Hide() end
+end)
+panel:HookScript("OnHide", function() texList:Hide() end)
+
+cursorY = cursorY - TEX_ROW - 10
+
+tinsert(refreshers, function()
+    local current = ns.TextureEntry(ns.db.texture)
+    PaintSwatch(texButton.fill, current, true)
+    texButton.label:SetText(T(current.key))
+    for _, item in ipairs(texEntries) do
+        PaintSwatch(item.fill, item.entry, item.id == ns.db.texture)
+        item.text:SetTextColor(1, 1, 1, item.id == ns.db.texture and 1 or 0.8)
     end
 end)
 

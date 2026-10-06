@@ -7,7 +7,7 @@
 **A clean, lightweight and fully customizable XP bar for World of Warcraft: Forever.**
 
 [![CurseForge](https://img.shields.io/badge/CurseForge-MyXPBar%20Forever-F16436?logo=curseforge&logoColor=white)](https://www.curseforge.com/wow/addons/myxpbar-forever)
-![Version](https://img.shields.io/badge/version-3.4-9966ff)
+![Version](https://img.shields.io/badge/version-3.5-9966ff)
 ![Interface](https://img.shields.io/badge/WoW%3A%20Forever-1.60.x%20(16001)-c8a14a)
 [![Support](https://img.shields.io/badge/Support-TipeeeStream-ff7b00)](https://www.tipeeestream.com/polarzz88/)
 
@@ -26,6 +26,8 @@ World of Warcraft style. No libraries, no dependencies.
 
 - **Replaces the Blizzard XP bar** — the default bar is hidden automatically, and comes back at max
   level for reputation and honor.
+- **11 bar textures** — default, smooth, flat, glass, shine, steel, stripes, ticks, grain, edge and
+  fade, each one a swatch in the options.
 - **6 bar styles** — classic, gold framed, segmented, thin line, spark and split rested, switched in
   one click with a live preview.
 - **Smooth and alive** — the bar slides to its new value, a floating `+245 XP` rises on every gain,
@@ -62,6 +64,7 @@ applied live.
 | Section | What you can change |
 | --- | --- |
 | Style | Classic, gold framed, segmented, thin line, spark, split rested |
+| Texture | Default, glaze, satin, minimal, glass, bevel, tube, brushed, linen, diagonal, ember |
 | Size | Width (200 px up to the width of your screen), height (8 to 60 px) and target level |
 | Colors | 8 quick colors or the full color wheel, for the XP bar and the rested XP, plus background opacity |
 | Options | Lock the bar, hide the Blizzard bar, sound on XP gain, texts on the bar, rested text, smooth animation, floating +XP, minimap button, full screen width, reputation on hover, reputation bar, XP per hour, XP of finished quests |

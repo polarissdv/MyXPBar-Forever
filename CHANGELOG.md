@@ -1,5 +1,14 @@
 # MyXPBar - Changelog
 
+## 3.5
+- **Bar textures.** Eleven of them: the game's own one, plus ten drawn for
+  the addon - glaze, satin, minimal, glass, bevel, tube, brushed, linen,
+  diagonal and ember. They are chosen from a drop-down that shows each
+  texture under its name, wearing your own bar colour, and they apply to
+  the XP bar, the rested part, the finished quests and the reputation bars
+  alike.
+- Asked for by a player on CurseForge. Thank you.
+
 ## 3.4
 - **A fill that no longer depends on the frame rate.** The bar moved by a
   slice of the time between two images: it crawled when the game stuttered
