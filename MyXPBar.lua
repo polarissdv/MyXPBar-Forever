@@ -584,39 +584,76 @@ end
 -- ANIMATION (smooth fill, floating XP gains, level up flash)
 -- =========================================================
 local ANIM_SPEED = 9      -- Higher = faster fill
+local LEVEL_SPEED = 16    -- The run to the end of a finished level is quicker
 local GAIN_TIME = 1.4     -- Seconds a "+XP" text stays on screen
 local FLASH_TIME = 0.5
 
-local anim = { value = 0, target = 0, rested = 0, restedTarget = 0, max = 1 }
+local anim = { value = 0, target = 0, rested = 0, restedTarget = 0, max = 1, speed = ANIM_SPEED }
 
--- The bar animates itself, and stops as soon as it reached its target
-local function AnimateBars(self, elapsed)
-    local step = math.min(elapsed * ANIM_SPEED, 1)
-    anim.value = anim.value + (anim.target - anim.value) * step
-    anim.rested = anim.rested + (anim.restedTarget - anim.rested) * step
+local ShowLevelFlash   -- Both live further down, with the other effects
+local RenderXPTexts
 
-    if math.abs(anim.target - anim.value) < 1 and math.abs(anim.restedTarget - anim.rested) < 1 then
-        anim.value, anim.rested = anim.target, anim.restedTarget
-        self:SetScript("OnUpdate", nil) -- Idle again: no work at all
-    end
+local function DrawBars()
     xpBar:SetValue(anim.value)
     restedBar:SetValue(anim.rested)
     underRested:SetValue(anim.rested)
     UpdateSpark(anim.value / anim.max)
 end
 
-local function SetBarValues(current, restedTotal, maxXP, instant)
+local function SetBarRange(maxXP)
+    anim.max = maxXP
     xpBar:SetMinMaxValues(0, maxXP)
     restedBar:SetMinMaxValues(0, maxXP)
     underRested:SetMinMaxValues(0, maxXP)
-    anim.target, anim.restedTarget, anim.max = current, restedTotal, maxXP
+end
+
+-- The bar animates itself, and stops as soon as it reached its target.
+-- The step is taken from the time really elapsed, so the fill looks the same
+-- at 20 or at 144 images per second instead of stuttering when the game does.
+local function AnimateBars(self, elapsed)
+    local step = 1 - math.exp(-anim.speed * elapsed)
+    anim.value = anim.value + (anim.target - anim.value) * step
+    anim.rested = anim.rested + (anim.restedTarget - anim.rested) * step
+
+    if math.abs(anim.target - anim.value) < 1 and math.abs(anim.restedTarget - anim.rested) < 1 then
+        anim.value, anim.rested = anim.target, anim.restedTarget
+        local after = anim.after
+        if after then
+            -- The bar just reached the end of the level that was finished:
+            -- flash, then start the new level from an empty bar
+            anim.after, anim.speed = nil, ANIM_SPEED
+            anim.value, anim.rested = 0, 0
+            anim.target, anim.restedTarget = after.current, after.rested
+            SetBarRange(after.max)
+            DrawBars()
+            ShowLevelFlash()
+            return
+        end
+        self:SetScript("OnUpdate", nil) -- Idle again: no work at all
+    end
+    DrawBars()
+    if not anim.after then RenderXPTexts(anim.value) end
+end
+
+-- levelUpFrom: the XP the level that was just finished needed. The bar runs
+-- to the end there before the new level starts, instead of snapping back.
+local function SetBarValues(current, restedTotal, maxXP, instant, levelUpFrom)
+    if levelUpFrom then
+        anim.after = { current = current, rested = restedTotal, max = maxXP }
+        anim.target, anim.restedTarget = levelUpFrom, levelUpFrom
+        anim.speed = LEVEL_SPEED
+        SetBarRange(levelUpFrom)
+        mainFrame:SetScript("OnUpdate", AnimateBars)
+        return
+    end
+
+    anim.after, anim.speed = nil, ANIM_SPEED
+    SetBarRange(maxXP)
+    anim.target, anim.restedTarget = current, restedTotal
 
     if instant or not ns.db.smooth then
         anim.value, anim.rested = current, restedTotal
-        xpBar:SetValue(current)
-        restedBar:SetValue(restedTotal)
-        underRested:SetValue(restedTotal)
-        UpdateSpark(current / maxXP)
+        DrawBars()
         mainFrame:SetScript("OnUpdate", nil)
     else
         mainFrame:SetScript("OnUpdate", AnimateBars)
@@ -644,9 +681,11 @@ local function EffectsUpdate(self, elapsed)
                 fs.left = nil
                 fs:Hide()
             else
+                -- Rises fast then slows down, and only fades at the end
                 local progress = 1 - fs.left / GAIN_TIME
-                fs:SetPoint("BOTTOM", mainFrame, "TOP", fs.offsetX, 4 + progress * 26)
-                fs:SetAlpha(1 - progress * progress)
+                local rise = 1 - (1 - progress) ^ 3
+                fs:SetPoint("BOTTOM", mainFrame, "TOP", fs.offsetX, 4 + rise * 26)
+                fs:SetAlpha(math.min((1 - progress) / 0.35, 1))
                 busy = true
             end
         end
@@ -683,7 +722,7 @@ local function ShowGain(amount)
     effects:SetScript("OnUpdate", EffectsUpdate)
 end
 
-local function ShowLevelFlash()
+function ShowLevelFlash()
     flashLeft = FLASH_TIME
     flash:SetAlpha(0.5)
     flash:Show()
@@ -851,6 +890,30 @@ local function SetTextCached(fontString, key, text)
     end
 end
 
+-- What the value and percentage texts need, kept between two updates so they
+-- can be drawn again at every step of the fill
+local barText = { maxXP = 1, mobs = "", questXP = 0, restedPct = 0 }
+
+-- Draws both texts for an XP amount: the bar hands it its own animated value,
+-- so the numbers count up with the fill instead of jumping to the total
+function RenderXPTexts(xp)
+    local maxXP = barText.maxXP
+    xp = math.max(math.min(math.floor(xp + 0.5), maxXP), 0)
+    SetTextCached(valueText, "value", FormatNumber(xp) .. " / " .. FormatNumber(maxXP) .. barText.mobs)
+
+    local pct = xp / maxXP * 100
+    local text = string.format("%.1f%%", pct)
+    -- In parentheses: where the finished quests will take you (gold, like
+    -- their part of the bar), or otherwise where the rested XP will
+    if barText.questXP > 0 then
+        text = text .. string.format(" |cffffd100(%.1f%%)|r",
+            math.min(pct + barText.questXP / maxXP * 100, 100))
+    elseif barText.restedPct > 0 then
+        text = text .. string.format(" (%.1f%%)", math.min(pct + barText.restedPct, 100))
+    end
+    SetTextCached(pctText, "pct", text)
+end
+
 local lastLevel
 
 local function UpdateStatus()
@@ -887,13 +950,16 @@ local function UpdateStatus()
         -- The end of the previous level plus the start of this one
         local previous = ns.db.xpPerLevel[level - 1]
         session.xp = session.xp + currXP + (previous and math.max(previous - lastXP, 0) or 0)
-        ShowLevelFlash()
+        if not (ns.db.smooth and previous) then ShowLevelFlash() end -- Otherwise: once the bar is full
     end
     -- diff < 0: player probably leveled up (XP reset), keep last known estimation
     lastXP = currXP
 
-    -- 3. Visual update of bars
-    SetBarValues(currXP, math.min(currXP + rested, maxXP), maxXP, levelChanged)
+    -- 3. Visual update of bars. A level up fills the bar to the end before
+    -- the new level starts, as long as the XP of the old level is known.
+    local levelUpFrom = levelChanged and ns.db.smooth and ns.db.xpPerLevel[level - 1] or nil
+    SetBarValues(currXP, math.min(currXP + rested, maxXP), maxXP,
+        levelChanged and not levelUpFrom, levelUpFrom)
 
     -- 4. Update Texts
     SetTextCached(levelText, "level", ns.T("BAR_LEVEL") .. " " .. level)
@@ -909,13 +975,6 @@ local function UpdateStatus()
             mobsLeftText = string.format(" (%d %s)", mobsCount, ns.T("BAR_MOBS"))
         end
     end
-
-    SetTextCached(valueText, "value", FormatNumber(currXP) .. " / " .. FormatNumber(maxXP) .. mobsLeftText)
-
-    -- Percentage Calculation
-    local pct = 0
-    if maxXP > 0 then pct = (currXP / maxXP) * 100 end
-    local totalString = string.format("%.1f%%", pct)
 
     -- Bottom text: rested and / or finished quests
     local subParts = {}
@@ -938,16 +997,11 @@ local function UpdateStatus()
     end
     SetTextCached(subText, "sub", table.concat(subParts, "  ·  "))
 
-    -- In parentheses: where the finished quests will take you (gold, like
-    -- their part of the bar), or otherwise where the rested XP will
-    if questXP > 0 and maxXP > 0 then
-        local withQuests = math.min(pct + (questXP / maxXP) * 100, 100)
-        totalString = totalString .. string.format(" |cffffd100(%.1f%%)|r", withQuests)
-    elseif restedPct > 0 then
-        totalString = totalString .. string.format(" (%.1f%%)", math.min(pct + restedPct, 100))
-    end
-
-    SetTextCached(pctText, "pct", totalString)
+    barText.maxXP, barText.mobs = maxXP, mobsLeftText
+    barText.questXP, barText.restedPct = questXP, restedPct
+    -- While the bar runs to the end of a finished level, its value is the old
+    -- level's: the texts stay on the real numbers instead of following it
+    RenderXPTexts(anim.after and currXP or anim.value)
     SetTextCached(sessionText, "session", ns.db.showSession and SessionLine(level, currXP, maxXP) or "")
     UpdateRepStrip()
 end

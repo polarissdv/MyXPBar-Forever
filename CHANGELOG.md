@@ -1,5 +1,20 @@
 # MyXPBar - Changelog
 
+## 3.4
+- **A fill that no longer depends on the frame rate.** The bar moved by a
+  slice of the time between two images: it crawled when the game stuttered
+  and rushed on a fast machine. The same gain now takes the same time
+  whatever happens on screen.
+- **The numbers climb with the bar.** The XP and the percentage are drawn
+  from the bar itself while it fills, instead of jumping to the total the
+  moment the kill lands.
+- **Levelling up runs to the end of the bar**, flashes there, then starts
+  the new level from an empty bar, instead of snapping back to the left.
+  (Needs the smooth fill option, and the XP of the level you just finished,
+  which the addon learns while you play.)
+- The floating "+245 XP" rises quickly then slows down, and only fades at
+  the very end instead of from the start.
+
 ## 3.3
 - **Moving the bar now works the way the unlock message says it does.**
   Unlocking it was not enough: you also had to hold Shift, or keep the
