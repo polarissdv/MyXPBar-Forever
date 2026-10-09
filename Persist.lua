@@ -9,9 +9,11 @@ local ADDON_NAME, ns = ...
 -- * Addon-registered CVars. They stay in memory while the game runs, so they
 --   cover a relog, but the client never writes them to disk: they are gone
 --   after a restart.
--- * One account macro holding a compact copy of the settings. Macros are kept
---   by the server and are always there after a restart. Only tables that give
---   an encoder get one (a macro body holds 255 characters).
+-- * One macro holding a compact copy of the settings. Macros are kept by the
+--   server and are always there after a restart. Only tables that give an
+--   encoder get one (a macro body holds 255 characters). The account settings
+--   use an account macro; a character profile uses a character macro, so each
+--   character keeps its own copy.
 --
 -- None of the copies are available yet when the addon loads: they are read
 -- back at login (several tries), and nothing is saved before that, so a copy
@@ -192,7 +194,9 @@ end
 -- getter: returns the live table
 -- restore(saved): called when the saved copy is more recent than the live table
 -- macro (optional): { name = macro name, encode = fn(table) -> string,
---                     decode = fn(string) -> table or nil }
+--                     decode = fn(string) -> table or nil,
+--                     perChar = true for a character macro instead of an
+--                     account one, skip = fn(table) -> true to write none }
 local entries = {}
 local ready = false       -- No saving before the copies have been read back
 local macrosLoaded = false -- The server sends the macros a moment after login
@@ -218,11 +222,22 @@ local function MacrosAvailable()
     return macrosLoaded or (GetNumMacros() or 0) > 0
 end
 
--- Index of our macro among the account macros, or nil
+-- Index of our macro among the account and character macros, or nil
 local function FindMacro(macroName)
     local index = GetMacroIndexByName(macroName)
-    if index and index > 0 and index <= (MAX_ACCOUNT_MACROS or 120) then return index end
+    -- Character macros are numbered after the account ones
+    local last = (MAX_ACCOUNT_MACROS or 120) + (MAX_CHARACTER_MACROS or 18)
+    if index and index > 0 and index <= last then return index end
     return nil
+end
+
+-- Is there a free slot left for this macro?
+local function HasFreeSlot(spec)
+    local account, character = GetNumMacros()
+    if spec.perChar then
+        return (character or 0) < (MAX_CHARACTER_MACROS or 18)
+    end
+    return (account or 0) < (MAX_ACCOUNT_MACROS or 120)
 end
 
 local function MacroBody(macroName, data)
@@ -256,15 +271,25 @@ local function WriteMacro(spec, data)
         return (pcall(EditMacro, index, spec.name, nil, body))
     end
 
-    if (GetNumMacros() or 0) >= (MAX_ACCOUNT_MACROS or 120) then
+    if not HasFreeSlot(spec) then
         if not warnedFull then
             warnedFull = true
-            DEFAULT_CHAT_FRAME:AddMessage("|cff9966ff" .. ADDON_NAME .. "|r: all account macro slots are used, "
+            DEFAULT_CHAT_FRAME:AddMessage("|cff9966ff" .. ADDON_NAME .. "|r: all macro slots are used, "
                 .. "your settings will not survive a restart. Free one slot and /reload.")
         end
         return false
     end
-    return (pcall(CreateMacro, spec.name, MACRO_ICON, body, false))
+    return (pcall(CreateMacro, spec.name, MACRO_ICON, body, spec.perChar and true or false))
+end
+
+-- A copy that is not wanted any more (a character sent back to the shared
+-- settings): the macro has to go, or it would bring the old profile back
+-- after a restart, when it is the only copy left.
+local function RemoveMacro(spec)
+    if not MacrosAvailable() or InCombatLockdown() then return end
+    if not DeleteMacro then return end
+    local index = FindMacro(spec.name)
+    if index then pcall(DeleteMacro, index) end
 end
 
 -- ---------------------------------------------------------
@@ -295,7 +320,14 @@ local function SaveAll()
         local ok, tbl = pcall(entry.getter)
         if ok and type(tbl) == "table" then
             Persist.Save(ResolveName(entry), tbl) -- Dates and skips unchanged data itself
-            if entry.macro then
+            local skip = false
+            if entry.macro and entry.macro.skip then
+                local okSkip, result = pcall(entry.macro.skip, tbl)
+                skip = okSkip and result
+            end
+            if entry.macro and skip then
+                RemoveMacro(entry.macro)
+            elseif entry.macro then
                 if not tbl._savedAt then tbl._savedAt = time() end
                 -- WriteMacro skips an unchanged macro, recreates a deleted one, and
                 -- is refused in combat: the next tick simply tries again
@@ -338,12 +370,26 @@ end
 -- after the usual delay it still waits for them (at most MACRO_WAIT seconds).
 local delayPassed = false
 local finished = false
+local readyCallbacks = {}
+
+-- Called once every copy had its chance to come back. Anything that must not
+-- act on default settings (the update notice, for one) waits for this.
+function Persist.OnReady(callback)
+    if finished then
+        callback()
+    else
+        tinsert(readyCallbacks, callback)
+    end
+end
+
 local function FinishRestore()
     if finished then return end
     finished = true
     TryRestore()
     ready = true
     SaveAll()
+    for _, callback in ipairs(readyCallbacks) do pcall(callback) end
+    wipe(readyCallbacks)
 end
 
 local events = CreateFrame("Frame")

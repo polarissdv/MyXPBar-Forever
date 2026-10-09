@@ -4,7 +4,7 @@ local T = ns.T
 -- =========================================================
 -- STYLE (native WoW look)
 -- =========================================================
-local VERSION = "3.5"
+local VERSION = ns.AddonVersion()
 -- Two columns side by side: the menu stays short enough for any screen
 local PAD = 26
 local GUTTER = 26
@@ -441,20 +441,25 @@ end
 
 -- Blizzard checkboxes, two per row
 local checkIndex = 0
-local function CreateCheck(labelKey, descKey, getValue, setValue)
-    local col = checkIndex % 2
+-- wide: the label needs the whole width, so the box sits alone on its row
+local function CreateCheck(labelKey, descKey, getValue, setValue, wide)
+    if wide and checkIndex % 2 == 1 then
+        cursorY = cursorY - 28
+        checkIndex = 0
+    end
+    local col = wide and 0 or (checkIndex % 2)
     local check = CreateFrame("CheckButton", nil, content, "UICheckButtonTemplate")
     check:SetSize(24, 24)
     check:SetPoint("TOPLEFT", col * (CONTENT_W / 2), cursorY)
-    if col == 1 then cursorY = cursorY - 28 end
-    checkIndex = checkIndex + 1
+    if wide or col == 1 then cursorY = cursorY - 28 end
+    checkIndex = wide and 0 or (checkIndex + 1)
 
     local templateText = check.Text or check.text
     if templateText then templateText:SetText("") end
 
     local label = check:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     label:SetPoint("LEFT", check, "RIGHT", 2, 1)
-    label:SetWidth(CONTENT_W / 2 - 30)
+    label:SetWidth((wide and CONTENT_W or CONTENT_W / 2) - 30)
     label:SetJustifyH("LEFT")
     Localize(label, labelKey)
 
@@ -474,6 +479,13 @@ local function CreateCheck(labelKey, descKey, getValue, setValue)
     check:SetScript("OnLeave", function() GameTooltip:Hide() end)
 
     tinsert(refreshers, function() check:SetChecked(getValue()) end)
+    return check
+end
+
+-- Closes the current row, so the next group starts on the left again
+local function EndChecks()
+    if checkIndex % 2 == 1 then cursorY = cursorY - 28 end
+    checkIndex = 0
 end
 
 local function OptionCheck(labelKey, descKey, dbKey, onChange)
@@ -779,6 +791,8 @@ CreateSlider("BG_OPACITY", 0, 100, 5,
     function(v) return v .. " %" end)
 
 Section("SECTION_OPTIONS")
+EndChecks()
+OptionCheck("ENABLED", "ENABLED_DESC", "enabled")
 OptionCheck("LOCK", "LOCK_DESC", "locked")
 OptionCheck("HIDE_BLIZZARD", "HIDE_BLIZZARD_DESC", "hideBlizzard")
 OptionCheck("SOUND", nil, "playSound")
@@ -788,12 +802,35 @@ OptionCheck("SMOOTH", "SMOOTH_DESC", "smooth")
 OptionCheck("SHOW_GAINS", "SHOW_GAINS_DESC", "showGains")
 OptionCheck("MINIMAP", "MINIMAP_DESC", "showMinimap", function() ns.UpdateMinimapButton() end)
 OptionCheck("REP_BAR", "REP_BAR_DESC", "showRepBar")
+OptionCheck("REP_HOVER", "REP_HOVER_DESC", "showRepHover")
+OptionCheck("MAX_LEVEL_REP", "MAX_LEVEL_REP_DESC", "maxLevelRep")
 OptionCheck("SHOW_SESSION", "SHOW_SESSION_DESC", "showSession")
 OptionCheck("FULL_WIDTH", "FULL_WIDTH_DESC", "fullWidth")
-OptionCheck("REP_HOVER", "REP_HOVER_DESC", "showRepHover")
 OptionCheck("QUEST_XP", "QUEST_XP_DESC", "showQuestXP")
 OptionCheck("HORIZONTAL_MENU", "HORIZONTAL_MENU_DESC", "horizontalMenu", function() ns.LayoutOptions() end)
-if checkIndex % 2 == 1 then cursorY = cursorY - 28 end
+OptionCheck("NEWS_LOGIN", "NEWS_LOGIN_DESC", "newsOnLogin")
+
+-- One profile per character, or the settings shared by the whole account
+local profileCheck = CreateCheck("PROFILE_OWN", "PROFILE_OWN_DESC",
+    function() return ns.Profiles.UsesOwn() end,
+    function(v)
+        ns.Profiles.SetOwn(v)
+        -- These two are settings like any other: they can differ per profile
+        ns.UpdateMinimapButton()
+        ns.LayoutOptions()
+    end)
+-- Its tooltip also names the character and says which settings are in use
+profileCheck:SetScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+    GameTooltip:SetText(T("PROFILE_OWN"))
+    GameTooltip:AddLine(T("PROFILE_OWN_DESC"), 1, 1, 1, true)
+    GameTooltip:AddLine(" ")
+    GameTooltip:AddLine(ns.Profiles.CharName(), GOLD[1], GOLD[2], GOLD[3])
+    GameTooltip:AddLine(T(ns.Profiles.UsesOwn() and "PROFILE_USING_OWN" or "PROFILE_USING_SHARED"),
+        0.7, 0.7, 0.7, true)
+    GameTooltip:Show()
+end)
+EndChecks()
 cursorY = cursorY - 34
 
 StartFooter()
@@ -804,8 +841,9 @@ langLabel:SetPoint("TOPLEFT", 0, cursorY)
 Localize(langLabel, "LANGUAGE")
 
 local function ApplyLanguage(lang)
-    ns.db.language = lang
+    ns.SetLanguage(lang)
     ns.ApplyFonts()
+    ns.ApplyBindingNames()
     for _, fs in ipairs(localizedTexts) do fs:SetText(T(fs.l10nKey)) end
     ns.Refresh()
     ns.RefreshOptions()
@@ -859,7 +897,7 @@ for i, entry in ipairs(ns.LANGUAGES) do
     item:SetScript("OnLeave", function(self) self.highlight:Hide() end)
     item:SetScript("OnClick", function(self)
         langList:Hide()
-        if ns.db.language == self.key then return end
+        if ns.Language() == self.key then return end
         PlayUISound("IG_MAINMENU_OPTION_CHECKBOX_ON")
         ApplyLanguage(self.key)
     end)
@@ -886,7 +924,7 @@ end)
 panel:HookScript("OnHide", function() langList:Hide() end)
 
 tinsert(refreshers, function()
-    local current = ns.db.language or ns.DefaultLanguage()
+    local current = ns.Language()
     langButton:SetText(ns.LanguageName(current))
     for _, item in ipairs(langEntries) do
         if item.key == current then
@@ -904,31 +942,71 @@ local footerOrnament = Ornament(footer, FULL_W)
 footerOrnament:SetPoint("TOP", footer, "TOP", 0, cursorY)
 cursorY = cursorY - 18
 
-local resetPosBtn = CreateButton(footer, "RESET_POSITION", FULL_W / 2 - 6, 26, function()
+local BUTTON_Y = cursorY -- LayoutOptions places the row itself
+local BUTTON_GAP = 8
+
+local function ProfileTip(frame, labelKey, descKey)
+    frame:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_TOP")
+        GameTooltip:SetText(T(labelKey))
+        GameTooltip:AddLine(T(descKey), 1, 1, 1, true)
+        GameTooltip:Show()
+    end)
+    frame:SetScript("OnLeave", function() GameTooltip:Hide() end)
+end
+
+local function AfterProfileChange()
+    ns.Refresh()
+    ns.UpdateMinimapButton()
+    ns.LayoutOptions()
+    ns.RefreshOptions()
+end
+
+local resetPosBtn = CreateButton(footer, "RESET_POSITION", 100, 26, function()
     ns.ResetPosition()
 end)
-resetPosBtn:SetPoint("TOPLEFT", 0, cursorY)
 
-local resetAllBtn = CreateButton(footer, "RESET_ALL", FULL_W / 2 - 6, 26, function()
-    local language = ns.db.language
+local fromSharedBtn = CreateButton(footer, "PROFILE_FROM_SHARED", 100, 26, function()
+    ns.Profiles.CopyFromShared()
+    AfterProfileChange()
+end)
+ProfileTip(fromSharedBtn, "PROFILE_FROM_SHARED", "PROFILE_FROM_SHARED_DESC")
+
+local toSharedBtn = CreateButton(footer, "PROFILE_TO_SHARED", 100, 26, function()
+    ns.Profiles.SaveAsShared()
+    AfterProfileChange()
+end)
+ProfileTip(toSharedBtn, "PROFILE_TO_SHARED", "PROFILE_TO_SHARED_DESC")
+
+tinsert(refreshers, function()
+    -- Nothing to copy from the shared settings while they are the ones in use
+    if ns.Profiles.UsesOwn() then fromSharedBtn:Enable() else fromSharedBtn:Disable() end
+end)
+
+local resetAllBtn = CreateButton(footer, "RESET_ALL", 100, 26, function()
+    -- Only the settings in use: the other profiles and the language stay
+    local own = ns.db.own
     local angle = ns.db.minimap.angle
     for k in pairs(ns.db) do ns.db[k] = nil end
     ns.CopyDefaults(ns.defaults, ns.db)
-    ns.db.language = language
     ns.db.minimap.angle = angle
+    ns.db.own = own
     ns.Refresh()
     ns.UpdateMinimapButton()
+    ns.LayoutOptions()
     ns.RefreshOptions()
 end)
-resetAllBtn:SetPoint("TOPRIGHT", footer, "TOPRIGHT", 0, cursorY)
+local footerButtons = { resetPosBtn, fromSharedBtn, toSharedBtn, resetAllBtn }
 cursorY = cursorY - 36
 
+local HINT_Y = cursorY
 local hint = footer:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
 hint:SetPoint("TOP", footer, "TOP", 0, cursorY)
 hint:SetWidth(FULL_W)
 Localize(hint, "HINT")
 cursorY = cursorY - 36
 
+local SIGNATURE_Y = cursorY
 local signature = footer:CreateFontString(nil, "OVERLAY")
 signature:SetFontObject(FontSmall)
 signature:SetTextColor(0.75, 0.62, 0.35)
@@ -941,6 +1019,7 @@ sigRight:SetPoint("LEFT", signature, "RIGHT", 8, 0)
 cursorY = cursorY - 26
 
 FinishColumn()
+local FOOTER_H = footer:GetHeight() -- With a single row of buttons
 
 -- =========================================================
 -- LAYOUT: the two columns side by side, or one under the other
@@ -970,9 +1049,27 @@ function ns.LayoutOptions()
 
     -- The footer widgets follow the width of the menu
     footerOrnament:SetWidth(footerWidth)
-    resetPosBtn:SetWidth(footerWidth / 2 - 6)
-    resetAllBtn:SetWidth(footerWidth / 2 - 6)
     hint:SetWidth(footerWidth)
+
+    -- The four buttons: one row in the wide menu, two in the narrow one
+    local columns = horizontal and 4 or 2
+    local buttonWidth = (footerWidth - BUTTON_GAP * (columns - 1)) / columns
+    for i, button in ipairs(footerButtons) do
+        local col = (i - 1) % columns
+        local row = math.floor((i - 1) / columns)
+        button:SetWidth(buttonWidth)
+        button:ClearAllPoints()
+        button:SetPoint("TOPLEFT", footer, "TOPLEFT",
+            col * (buttonWidth + BUTTON_GAP), BUTTON_Y - row * 30)
+    end
+
+    -- A second row of buttons pushes everything under it down
+    local extra = (columns == 4) and 0 or 30
+    hint:ClearAllPoints()
+    hint:SetPoint("TOP", footer, "TOP", 0, HINT_Y - extra)
+    signature:ClearAllPoints()
+    signature:SetPoint("TOP", footer, "TOP", 0, SIGNATURE_Y - extra)
+    footer:SetHeight(FOOTER_H + extra)
 
     panel:SetSize(PAD * 2 + footerWidth,
         -CONTENT_TOP + contentHeight + GAP + footer:GetHeight() + 16)
@@ -1005,6 +1102,138 @@ function ns.ToggleOptions()
     panel:SetShown(not panel:IsShown())
 end
 
+-- =========================================================
+-- WHAT'S NEW
+-- =========================================================
+-- Shown once after an update, and on /mxp news. The lines are translated like
+-- everything else: one key per line, rewritten with each release.
+local NEWS_LINES = { "NEWS_1", "NEWS_2", "NEWS_3" }
+local NEWS_W = 420
+
+local news = CreateFrame("Frame", "MyXPBarNewsFrame", UIParent, "BackdropTemplate")
+news:SetSize(NEWS_W, 200)
+news:SetPoint("CENTER", 0, 60)
+news:SetFrameStrata("DIALOG")
+news:SetToplevel(true)
+news:SetMovable(true)
+news:SetClampedToScreen(true)
+news:EnableMouse(true)
+news:RegisterForDrag("LeftButton")
+news:SetScript("OnDragStart", news.StartMoving)
+news:SetScript("OnDragStop", news.StopMovingOrSizing)
+news:SetBackdrop(DIALOG_BACKDROP)
+news:Hide()
+tinsert(UISpecialFrames, "MyXPBarNewsFrame") -- Escape closes it
+
+local newsGlow = news:CreateTexture(nil, "BACKGROUND", nil, 2)
+newsGlow:SetPoint("TOPLEFT", 12, -12)
+newsGlow:SetPoint("TOPRIGHT", -12, -12)
+newsGlow:SetHeight(90)
+SetGradientSafe(newsGlow, "VERTICAL", 0.55, 0.38, 0.1, 0, 0.3)
+
+local newsIcon = news:CreateTexture(nil, "ARTWORK")
+newsIcon:SetSize(32, 32)
+newsIcon:SetPoint("TOPLEFT", 22, -20)
+newsIcon:SetTexture(ICON)
+
+local newsTitle = news:CreateFontString(nil, "OVERLAY")
+newsTitle:SetFontObject(FontSection)
+newsTitle:SetTextColor(GOLD[1], GOLD[2], GOLD[3])
+newsTitle:SetPoint("TOPLEFT", newsIcon, "TOPRIGHT", 10, -2)
+Localize(newsTitle, "NEWS_TITLE")
+
+local newsVersion = news:CreateFontString(nil, "OVERLAY")
+newsVersion:SetFontObject(FontSmall)
+newsVersion:SetTextColor(0.75, 0.68, 0.52)
+newsVersion:SetPoint("TOPLEFT", newsTitle, "BOTTOMLEFT", 0, -3)
+newsVersion:SetText("MyXPBar v" .. VERSION)
+
+local newsCloseX = CreateFrame("Button", nil, news, "UIPanelCloseButton")
+newsCloseX:SetPoint("TOPRIGHT", -6, -6)
+
+local newsOrnament = Ornament(news, NEWS_W - 44)
+local newsTexts = {}
+for i, key in ipairs(NEWS_LINES) do
+    local bullet = Diamond(news, 5, "OVERLAY")
+    local line = news:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    line:SetWidth(NEWS_W - 70)
+    line:SetJustifyH("LEFT")
+    line:SetSpacing(2)
+    Localize(line, key)
+    newsTexts[i] = { bullet = bullet, text = line }
+end
+
+local newsClose = CreateButton(news, "NEWS_CLOSE", 140, 24, function() news:Hide() end)
+
+-- The lines wrap, so the height is only known once they hold their text
+local function LayoutNews()
+    local y = -64
+    newsOrnament:ClearAllPoints()
+    newsOrnament:SetPoint("TOP", news, "TOP", 0, y)
+    y = y - 16
+    for _, entry in ipairs(newsTexts) do
+        entry.text:ClearAllPoints()
+        entry.text:SetPoint("TOPLEFT", news, "TOPLEFT", 42, y)
+        entry.bullet:ClearAllPoints()
+        entry.bullet:SetPoint("TOPLEFT", news, "TOPLEFT", 26, y - 5)
+        y = y - math.max(entry.text:GetStringHeight(), 14) - 10
+    end
+    y = y - 6
+    newsClose:ClearAllPoints()
+    newsClose:SetPoint("TOP", news, "TOP", 0, y)
+    news:SetHeight(-y + 24 + 16)
+end
+
+function ns.ShowNews()
+    newsVersion:SetText("MyXPBar v" .. ns.AddonVersion())
+    for _, entry in ipairs(newsTexts) do entry.text:SetText(T(entry.text.l10nKey)) end
+    LayoutNews()
+    news:Show()
+    LayoutNews() -- The wrapped height is only final once it is on screen
+    PlayUISound("IG_CHARACTER_INFO_OPEN")
+end
+
+-- One chat line after an update, and the panel unless the player is fighting
+function ns.AnnounceNews(version)
+    local r, g, b = Accent()
+    DEFAULT_CHAT_FRAME:AddMessage(string.format("|cff%02x%02x%02xMyXPBar|r %s",
+        math.floor(r * 255), math.floor(g * 255), math.floor(b * 255),
+        string.format(T("NEWS_CHAT"), version)))
+    if not InCombatLockdown() then ns.ShowNews() end
+end
+
+-- =========================================================
+-- SHOWING AND HIDING THE BAR
+-- =========================================================
+-- The same switch behind the option, /mxp on and off, the middle click on the
+-- minimap button and the key binding.
+function ns.SetBarEnabled(on, quiet)
+    ns.db.enabled = on and true or false
+    if not quiet then
+        local r, g, b = Accent()
+        DEFAULT_CHAT_FRAME:AddMessage(string.format("|cff%02x%02x%02xMyXPBar|r %s",
+            math.floor(r * 255), math.floor(g * 255), math.floor(b * 255),
+            T(ns.db.enabled and "CHAT_BAR_ON" or "CHAT_BAR_OFF")))
+    end
+    ns.Refresh()
+    ns.RefreshOptions()
+end
+
+-- Called by the key binding (see Bindings.xml)
+function MyXPBar_ToggleBar()
+    ns.SetBarEnabled(not ns.BarEnabled())
+end
+
+-- The key bindings window reads these globals when it opens, so they are set
+-- again every time the language changes
+function ns.ApplyBindingNames()
+    BINDING_HEADER_MYXPBAR = "MyXPBar"
+    BINDING_NAME_MYXPBAR_TOGGLE = T("BINDING_TOGGLE")
+end
+
+-- =========================================================
+-- SLASH COMMANDS
+-- =========================================================
 SLASH_MYXPBAR1 = "/mxp"
 SLASH_MYXPBAR2 = "/myxpbar"
 SlashCmdList.MYXPBAR = function(msg)
@@ -1016,6 +1245,10 @@ SlashCmdList.MYXPBAR = function(msg)
     elseif command == "quests" then
         -- What the quest log gives on this client
         ns.DebugQuests(Print)
+    elseif command == "news" then
+        ns.ShowNews()
+    elseif command == "on" or command == "off" then
+        ns.SetBarEnabled(command == "on")
     else
         ns.ToggleOptions()
     end
@@ -1033,7 +1266,7 @@ local mm = CreateFrame("Button", "MyXPBarMinimapButton", Minimap)
 mm:SetSize(31, 31)
 mm:SetFrameStrata("MEDIUM")
 mm:SetFrameLevel(8)
-mm:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+mm:RegisterForClicks("LeftButtonUp", "RightButtonUp", "MiddleButtonUp")
 mm:RegisterForDrag("LeftButton")
 mm:SetHighlightTexture("Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight")
 
@@ -1078,7 +1311,9 @@ end)
 mm:SetScript("OnDragStop", function(self) self:SetScript("OnUpdate", nil) end)
 
 mm:SetScript("OnClick", function(self, button)
-    if button == "RightButton" then
+    if button == "MiddleButton" then
+        MyXPBar_ToggleBar()
+    elseif button == "RightButton" then
         ns.db.locked = not ns.db.locked
         local r, g, b = Accent()
         DEFAULT_CHAT_FRAME:AddMessage(
@@ -1108,6 +1343,7 @@ mm:SetScript("OnEnter", function(self)
     GameTooltip:AddLine(" ")
     GameTooltip:AddLine(T("TT_LEFT_CLICK"), 0.7, 0.7, 0.7)
     GameTooltip:AddLine(T("TT_RIGHT_CLICK"), 0.7, 0.7, 0.7)
+    GameTooltip:AddLine(T("TT_MIDDLE_CLICK"), 0.7, 0.7, 0.7)
     GameTooltip:AddLine(T("TT_DRAG"), 0.7, 0.7, 0.7)
     GameTooltip:Show()
 end)
@@ -1115,6 +1351,8 @@ mm:SetScript("OnLeave", function() GameTooltip:Hide() end)
 
 -- Place the button once the saved settings are loaded
 tinsert(ns.dbReadyCallbacks, ns.UpdateMinimapButton)
+-- The key binding carries the name of the saved language
+tinsert(ns.dbReadyCallbacks, ns.ApplyBindingNames)
 -- The saved language decides which title font can be used
 tinsert(ns.dbReadyCallbacks, ns.ApplyFonts)
 -- The saved layout (horizontal or vertical) is applied once settings load

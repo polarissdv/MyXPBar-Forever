@@ -1,5 +1,30 @@
 # MyXPBar - Changelog
 
+## 3.6
+- **One profile per character.** Move the bar on one character and your others
+  keep theirs. Position, size, colours, style, texture, every option: a
+  character can have its own set, or use the ones shared by the whole account:
+  that is the new "Character profile" option, whose tooltip names the character
+  and says which settings are in use. Two buttons at the bottom of the menu
+  copy the shared settings onto this character, or turn what you see into the
+  shared settings. Everything you had set up before becomes the shared profile,
+  so nothing moves on any character.
+- **A switch for the bar.** The new "Bar enabled" option hides the bar at any
+  level, without disabling the addon - and without the bar of the game taking
+  its place, as long as "Hide Blizzard XP bar" is checked. Four ways to reach
+  it: the option, a middle click on the minimap button, a key of your own
+  (Game Menu > Key Bindings > MyXPBar), and `/mxp off` / `/mxp on`.
+- **Reputation at max level.** Instead of simply disappearing at max level, the
+  bar can show your tracked faction, standing and progress, in the place of the
+  XP. Optional, off by default, and the bar still disappears when you track no
+  faction.
+- **The addon tells you when it was updated.** One line in the chat and a short
+  "What's new" panel, once per version and never again. `/mxp news` opens it
+  whenever you want, and "Announce updates" turns the whole thing off.
+- The language is now saved for the whole account, next to the profiles, so it
+  no longer changes from one character to the next.
+- Asked for by a player on CurseForge. Thank you.
+
 ## 3.5
 - **Bar textures.** Eleven of them: the game's own one, plus ten drawn for
   the addon - glaze, satin, minimal, glass, bevel, tube, brushed, linen,

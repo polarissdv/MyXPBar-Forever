@@ -97,9 +97,34 @@ local L = {
         TT_RESTED = "Rested",
         TT_LEFT_CLICK = "|cffffffffLeft click|r: options",
         TT_RIGHT_CLICK = "|cffffffffRight click|r: lock / unlock",
+        TT_MIDDLE_CLICK = "|cffffffffMiddle click|r: hide / show the bar",
+        BINDING_TOGGLE = "Hide / show the bar",
         TT_DRAG = "|cffffffffDrag|r: move this button",
         CHAT_LOCKED = "bar locked.",
         CHAT_UNLOCKED = "bar unlocked: drag it to move it.",
+        -- Profiles, bar switch and news (3.6)
+        PROFILE_OWN = "Character profile",
+        PROFILE_OWN_DESC = "Checked, this character keeps its own bar: position, size, colors, everything. Unchecked, it goes back to the settings shared by the whole account.",
+        PROFILE_USING_OWN = "This character has its own settings.",
+        PROFILE_USING_SHARED = "This character uses the shared settings.",
+        PROFILE_FROM_SHARED = "Copy the shared ones",
+        PROFILE_FROM_SHARED_DESC = "Replaces the settings of this character with the shared ones. The way back when you changed too much.",
+        PROFILE_TO_SHARED = "Share these settings",
+        PROFILE_TO_SHARED_DESC = "What you see here becomes the shared settings: every character without its own profile uses them.",
+        ENABLED = "Bar enabled",
+        ENABLED_DESC = "Unchecked, the bar disappears completely, whatever your level. The bar of the game stays hidden too, as long as \"Hide Blizzard XP bar\" is checked. Also: middle click on the minimap button, /mxp off, or a key binding (Game Menu > Key Bindings > MyXPBar).",
+        MAX_LEVEL_REP = "Reputation at max level",
+        MAX_LEVEL_REP_DESC = "At max level the bar shows your tracked reputation instead of disappearing. With no faction tracked it still disappears.",
+        NEWS_LOGIN = "Announce updates",
+        NEWS_LOGIN_DESC = "One line in the chat when the addon was updated, once per version and nothing more.",
+        NEWS_TITLE = "What's new",
+        NEWS_CHAT = "updated to %s  -  type /mxp news to see what changed.",
+        NEWS_CLOSE = "Got it",
+        NEWS_1 = "|cffffd100Settings for each character.|r Move the bar on one character and the others keep theirs: check \"Character profile\" in the options.",
+        NEWS_2 = "|cffffd100A switch for the bar.|r \"Bar enabled\", a middle click on the minimap button or a key binding hide it at any level. And at max level it can show your tracked reputation instead of vanishing.",
+        NEWS_3 = "|cffffd100This panel.|r It opens once after an update, with one line in the chat. /mxp news brings it back, and the option can be turned off.",
+        CHAT_BAR_ON = "bar enabled.",
+        CHAT_BAR_OFF = "bar disabled. /mxp on brings it back.",
     },
 
     fr = {
@@ -189,9 +214,34 @@ local L = {
         TT_RESTED = "Repos",
         TT_LEFT_CLICK = "|cffffffffClic gauche|r : options",
         TT_RIGHT_CLICK = "|cffffffffClic droit|r : verrouiller / déverrouiller",
+        TT_MIDDLE_CLICK = "|cffffffffClic molette|r : cacher / afficher la barre",
+        BINDING_TOGGLE = "Cacher / afficher la barre",
         TT_DRAG = "|cffffffffGlisser|r : déplacer ce bouton",
         CHAT_LOCKED = "barre verrouillée.",
         CHAT_UNLOCKED = "barre déverrouillée : glisse-la pour la déplacer.",
+        -- Profils, interrupteur et nouveautes (3.6)
+        PROFILE_OWN = "Profil du personnage",
+        PROFILE_OWN_DESC = "Coché, ce personnage garde sa barre : position, taille, couleurs, tout. Décoché, il revient aux réglages partagés par tout le compte.",
+        PROFILE_USING_OWN = "Ce personnage a ses propres réglages.",
+        PROFILE_USING_SHARED = "Ce personnage utilise les réglages partagés.",
+        PROFILE_FROM_SHARED = "Copier les partagés",
+        PROFILE_FROM_SHARED_DESC = "Remplace les réglages de ce personnage par les réglages partagés. Le chemin du retour quand tu as trop changé.",
+        PROFILE_TO_SHARED = "Partager ces réglages",
+        PROFILE_TO_SHARED_DESC = "Ce que tu vois ici devient les réglages partagés : tous les personnages sans profil propre les utilisent.",
+        ENABLED = "Barre activée",
+        ENABLED_DESC = "Décoché, la barre disparaît complètement, à n'importe quel niveau. La barre du jeu reste cachée elle aussi, tant que « Masquer barre Blizzard » est cochée. Aussi : clic molette sur le bouton minimap, /mxp off, ou un raccourci clavier (Menu du jeu > Raccourcis > MyXPBar).",
+        MAX_LEVEL_REP = "Réputation au niveau max",
+        MAX_LEVEL_REP_DESC = "Au niveau max, la barre affiche ta réputation suivie au lieu de disparaître. Sans faction suivie, elle disparaît quand même.",
+        NEWS_LOGIN = "Annoncer les mises à jour",
+        NEWS_LOGIN_DESC = "Une ligne dans le chat quand l'addon a été mis à jour, une seule fois par version et rien de plus.",
+        NEWS_TITLE = "Nouveautés",
+        NEWS_CHAT = "mis à jour en %s  -  tape /mxp news pour voir ce qui change.",
+        NEWS_CLOSE = "Compris",
+        NEWS_1 = "|cffffd100Des réglages par personnage.|r Déplace la barre sur un personnage, les autres gardent la leur : coche « Profil du personnage » dans les options.",
+        NEWS_2 = "|cffffd100Un interrupteur pour la barre.|r « Barre activée », le clic molette sur le bouton minimap ou un raccourci clavier la cachent à n'importe quel niveau. Et au niveau max, elle peut afficher ta réputation suivie au lieu de disparaître.",
+        NEWS_3 = "|cffffd100Ce panneau.|r Il s'ouvre une fois après une mise à jour, avec une ligne dans le chat. /mxp news le rouvre, et l'option peut être coupée.",
+        CHAT_BAR_ON = "barre activée.",
+        CHAT_BAR_OFF = "barre désactivée. /mxp on la fait revenir.",
     },
 
     de = {
@@ -281,9 +331,34 @@ local L = {
         TT_RESTED = "Erholt",
         TT_LEFT_CLICK = "|cffffffffLinksklick|r: Optionen",
         TT_RIGHT_CLICK = "|cffffffffRechtsklick|r: sperren / entsperren",
+        TT_MIDDLE_CLICK = "|cffffffffMittelklick|r: Leiste aus- / einblenden",
+        BINDING_TOGGLE = "Leiste aus- / einblenden",
         TT_DRAG = "|cffffffffZiehen|r: diesen Knopf verschieben",
         CHAT_LOCKED = "Leiste gesperrt.",
         CHAT_UNLOCKED = "Leiste entsperrt: zum Verschieben ziehen.",
+        -- Profile, Schalter und Neuerungen (3.6)
+        PROFILE_OWN = "Charakterprofil",
+        PROFILE_OWN_DESC = "Aktiviert behält dieser Charakter seine eigene Leiste: Position, Größe, Farben, alles. Deaktiviert gelten wieder die gemeinsamen Einstellungen des Accounts.",
+        PROFILE_USING_OWN = "Dieser Charakter hat eigene Einstellungen.",
+        PROFILE_USING_SHARED = "Dieser Charakter nutzt die gemeinsamen Einstellungen.",
+        PROFILE_FROM_SHARED = "Gemeinsame übernehmen",
+        PROFILE_FROM_SHARED_DESC = "Ersetzt die Einstellungen dieses Charakters durch die gemeinsamen. Der Weg zurück, wenn zu viel verändert wurde.",
+        PROFILE_TO_SHARED = "Diese teilen",
+        PROFILE_TO_SHARED_DESC = "Was du hier siehst, wird zur gemeinsamen Einstellung: jeder Charakter ohne eigenes Profil nutzt sie.",
+        ENABLED = "Leiste aktiv",
+        ENABLED_DESC = "Deaktiviert verschwindet die Leiste ganz, auf jeder Stufe. Die Leiste des Spiels bleibt ebenfalls ausgeblendet, solange \"Blizzard-EP-Leiste ausblenden\" aktiv ist. Auch: Mittelklick auf den Minimap-Knopf, /mxp off, oder eine Tastenbelegung (Spielmenü > Tastenbelegung > MyXPBar).",
+        MAX_LEVEL_REP = "Ruf auf Maximalstufe",
+        MAX_LEVEL_REP_DESC = "Auf Maximalstufe zeigt die Leiste den verfolgten Ruf, statt zu verschwinden. Ohne verfolgte Fraktion verschwindet sie weiterhin.",
+        NEWS_LOGIN = "Updates ankündigen",
+        NEWS_LOGIN_DESC = "Eine Zeile im Chat, wenn das Addon aktualisiert wurde - einmal pro Version und nicht mehr.",
+        NEWS_TITLE = "Neuerungen",
+        NEWS_CHAT = "auf %s aktualisiert  -  /mxp news zeigt, was neu ist.",
+        NEWS_CLOSE = "Verstanden",
+        NEWS_1 = "|cffffd100Einstellungen pro Charakter.|r Verschiebe die Leiste auf einem Charakter, die anderen behalten ihre: aktiviere \"Charakterprofil\".",
+        NEWS_2 = "|cffffd100Ein Schalter für die Leiste.|r \"Leiste aktiv\", ein Mittelklick auf den Minimap-Knopf oder eine Tastenbelegung blenden sie auf jeder Stufe aus. Auf Maximalstufe kann sie den verfolgten Ruf zeigen.",
+        NEWS_3 = "|cffffd100Dieses Fenster.|r Es öffnet sich einmal nach einem Update, mit einer Zeile im Chat. /mxp news öffnet es wieder, und die Option lässt sich abschalten.",
+        CHAT_BAR_ON = "Leiste aktiviert.",
+        CHAT_BAR_OFF = "Leiste deaktiviert. /mxp on bringt sie zurück.",
     },
 
     es = {
@@ -373,9 +448,34 @@ local L = {
         TT_RESTED = "Descanso",
         TT_LEFT_CLICK = "|cffffffffClic izquierdo|r: opciones",
         TT_RIGHT_CLICK = "|cffffffffClic derecho|r: bloquear / desbloquear",
+        TT_MIDDLE_CLICK = "|cffffffffClic central|r: ocultar / mostrar la barra",
+        BINDING_TOGGLE = "Ocultar / mostrar la barra",
         TT_DRAG = "|cffffffffArrastrar|r: mover este botón",
         CHAT_LOCKED = "barra bloqueada.",
         CHAT_UNLOCKED = "barra desbloqueada: arrástrala para moverla.",
+        -- Perfiles, interruptor y novedades (3.6)
+        PROFILE_OWN = "Perfil del personaje",
+        PROFILE_OWN_DESC = "Marcado, este personaje conserva su barra: posición, tamaño, colores, todo. Sin marcar, vuelve a los ajustes compartidos por toda la cuenta.",
+        PROFILE_USING_OWN = "Este personaje tiene sus propios ajustes.",
+        PROFILE_USING_SHARED = "Este personaje usa los ajustes compartidos.",
+        PROFILE_FROM_SHARED = "Copiar los compartidos",
+        PROFILE_FROM_SHARED_DESC = "Sustituye los ajustes de este personaje por los compartidos. El camino de vuelta cuando has cambiado demasiado.",
+        PROFILE_TO_SHARED = "Compartir estos ajustes",
+        PROFILE_TO_SHARED_DESC = "Lo que ves aquí pasa a ser el ajuste compartido: lo usan todos los personajes sin perfil propio.",
+        ENABLED = "Barra activada",
+        ENABLED_DESC = "Sin marcar, la barra desaparece por completo, sea cual sea tu nivel. La barra del juego también sigue oculta mientras \"Ocultar barra de Blizzard\" esté marcada. También: clic central en el botón del minimapa, /mxp off, o un atajo de teclado (Menú del juego > Atajos de teclado > MyXPBar).",
+        MAX_LEVEL_REP = "Reputación al nivel máximo",
+        MAX_LEVEL_REP_DESC = "Al nivel máximo la barra muestra la reputación que sigues en vez de desaparecer. Sin facción seguida, desaparece igual.",
+        NEWS_LOGIN = "Anunciar actualizaciones",
+        NEWS_LOGIN_DESC = "Una línea en el chat cuando el addon se ha actualizado, una sola vez por versión y nada más.",
+        NEWS_TITLE = "Novedades",
+        NEWS_CHAT = "actualizado a %s  -  escribe /mxp news para ver los cambios.",
+        NEWS_CLOSE = "Entendido",
+        NEWS_1 = "|cffffd100Ajustes por personaje.|r Mueve la barra en un personaje y los demás conservan la suya: marca \"Perfil del personaje\".",
+        NEWS_2 = "|cffffd100Un interruptor para la barra.|r \"Barra activada\", un clic central en el botón del minimapa o un atajo de teclado la ocultan en cualquier nivel. Y al nivel máximo puede mostrar tu reputación seguida.",
+        NEWS_3 = "|cffffd100Este panel.|r Se abre una vez tras una actualización, con una línea en el chat. /mxp news lo vuelve a abrir.",
+        CHAT_BAR_ON = "barra activada.",
+        CHAT_BAR_OFF = "barra desactivada. /mxp on la devuelve.",
     },
 
     pt = {
@@ -465,9 +565,34 @@ local L = {
         TT_RESTED = "Descanso",
         TT_LEFT_CLICK = "|cffffffffClique esquerdo|r: opções",
         TT_RIGHT_CLICK = "|cffffffffClique direito|r: travar / destravar",
+        TT_MIDDLE_CLICK = "|cffffffffClique do meio|r: ocultar / mostrar a barra",
+        BINDING_TOGGLE = "Ocultar / mostrar a barra",
         TT_DRAG = "|cffffffffArrastar|r: mover este botão",
         CHAT_LOCKED = "barra travada.",
         CHAT_UNLOCKED = "barra destravada: arraste-a para movê-la.",
+        -- Perfis, interruptor e novidades (3.6)
+        PROFILE_OWN = "Perfil do personagem",
+        PROFILE_OWN_DESC = "Marcado, este personagem guarda a sua barra: posição, tamanho, cores, tudo. Desmarcado, volta aos ajustes partilhados por toda a conta.",
+        PROFILE_USING_OWN = "Este personagem tem ajustes próprios.",
+        PROFILE_USING_SHARED = "Este personagem usa os ajustes partilhados.",
+        PROFILE_FROM_SHARED = "Copiar os partilhados",
+        PROFILE_FROM_SHARED_DESC = "Substitui os ajustes deste personagem pelos partilhados. O caminho de volta quando mudaste demasiado.",
+        PROFILE_TO_SHARED = "Partilhar estes ajustes",
+        PROFILE_TO_SHARED_DESC = "O que vês aqui passa a ser o ajuste partilhado: usam-no todos os personagens sem perfil próprio.",
+        ENABLED = "Barra ativada",
+        ENABLED_DESC = "Desmarcado, a barra desaparece por completo, seja qual for o teu nível. A barra do jogo também fica escondida enquanto \"Ocultar barra da Blizzard\" estiver marcada. Também: clique do meio no botão do minimapa, /mxp off, ou um atalho de teclado (Menu do jogo > Atalhos > MyXPBar).",
+        MAX_LEVEL_REP = "Reputação no nível máximo",
+        MAX_LEVEL_REP_DESC = "No nível máximo a barra mostra a reputação que segues em vez de desaparecer. Sem facção seguida, desaparece igual.",
+        NEWS_LOGIN = "Anunciar atualizações",
+        NEWS_LOGIN_DESC = "Uma linha no chat quando o addon foi atualizado, uma vez por versão e nada mais.",
+        NEWS_TITLE = "Novidades",
+        NEWS_CHAT = "atualizado para %s  -  escreve /mxp news para ver o que mudou.",
+        NEWS_CLOSE = "Entendido",
+        NEWS_1 = "|cffffd100Ajustes por personagem.|r Move a barra num personagem e os outros guardam a sua: marca \"Perfil do personagem\".",
+        NEWS_2 = "|cffffd100Um interruptor para a barra.|r \"Barra ativada\", um clique do meio no botão do minimapa ou um atalho de teclado escondem-na em qualquer nível. E no nível máximo pode mostrar a reputação que segues.",
+        NEWS_3 = "|cffffd100Este painel.|r Abre uma vez depois de uma atualização, com uma linha no chat. /mxp news abre-o de novo.",
+        CHAT_BAR_ON = "barra ativada.",
+        CHAT_BAR_OFF = "barra desativada. /mxp on traz de volta.",
     },
 
     ru = {
@@ -557,9 +682,34 @@ local L = {
         TT_RESTED = "Отдых",
         TT_LEFT_CLICK = "|cffffffffЛевый клик|r: настройки",
         TT_RIGHT_CLICK = "|cffffffffПравый клик|r: закрепить / открепить",
+        TT_MIDDLE_CLICK = "|cffffffffСредняя кнопка|r: скрыть / показать полосу",
+        BINDING_TOGGLE = "Скрыть / показать полосу",
         TT_DRAG = "|cffffffffПеретащить|r: переместить кнопку",
         CHAT_LOCKED = "полоса закреплена.",
         CHAT_UNLOCKED = "полоса откреплена: тяни её мышью.",
+        -- Профили, выключатель и новости (3.6)
+        PROFILE_OWN = "Профиль персонажа",
+        PROFILE_OWN_DESC = "Включено: у персонажа своя полоса - позиция, размер, цвета, всё. Выключено: он снова использует общие настройки учётной записи.",
+        PROFILE_USING_OWN = "У этого персонажа свои настройки.",
+        PROFILE_USING_SHARED = "Этот персонаж использует общие настройки.",
+        PROFILE_FROM_SHARED = "Взять общие",
+        PROFILE_FROM_SHARED_DESC = "Заменяет настройки этого персонажа общими. Путь назад, если изменено слишком много.",
+        PROFILE_TO_SHARED = "Сделать общими",
+        PROFILE_TO_SHARED_DESC = "То, что вы видите здесь, станет общими настройками: их используют все персонажи без своего профиля.",
+        ENABLED = "Полоса включена",
+        ENABLED_DESC = "Выключено: полоса исчезает полностью, на любом уровне. Полоса игры тоже остаётся скрытой, пока включено \"Скрыть полосу Blizzard\". Ещё: щелчок средней кнопкой по значку у миникарты, /mxp off или горячая клавиша (Меню игры > Горячие клавиши > MyXPBar).",
+        MAX_LEVEL_REP = "Репутация на макс. уровне",
+        MAX_LEVEL_REP_DESC = "На максимальном уровне полоса показывает отслеживаемую репутацию вместо того, чтобы исчезнуть. Без выбранной фракции она всё равно исчезает.",
+        NEWS_LOGIN = "Сообщать об обновлениях",
+        NEWS_LOGIN_DESC = "Одна строка в чате, когда аддон обновился - один раз на версию, и ничего больше.",
+        NEWS_TITLE = "Что нового",
+        NEWS_CHAT = "обновлён до %s  -  введите /mxp news, чтобы увидеть изменения.",
+        NEWS_CLOSE = "Понятно",
+        NEWS_1 = "|cffffd100Настройки для каждого персонажа.|r Передвиньте полосу на одном персонаже, остальные сохранят свою: включите \"Профиль персонажа\".",
+        NEWS_2 = "|cffffd100Выключатель для полосы.|r \"Полоса включена\", щелчок средней кнопкой по значку у миникарты или горячая клавиша убирают её на любом уровне. А на максимальном уровне она может показывать отслеживаемую репутацию.",
+        NEWS_3 = "|cffffd100Это окно.|r Оно открывается один раз после обновления, вместе со строкой в чате. /mxp news откроет его снова.",
+        CHAT_BAR_ON = "полоса включена.",
+        CHAT_BAR_OFF = "полоса выключена. /mxp on вернёт её.",
     },
 
     it = {
@@ -649,9 +799,34 @@ local L = {
         TT_RESTED = "Riposo",
         TT_LEFT_CLICK = "|cffffffffClic sinistro|r: opzioni",
         TT_RIGHT_CLICK = "|cffffffffClic destro|r: blocca / sblocca",
+        TT_MIDDLE_CLICK = "|cffffffffClic centrale|r: nascondi / mostra la barra",
+        BINDING_TOGGLE = "Nascondi / mostra la barra",
         TT_DRAG = "|cffffffffTrascina|r: sposta questo pulsante",
         CHAT_LOCKED = "barra bloccata.",
         CHAT_UNLOCKED = "barra sbloccata: trascinala per spostarla.",
+        -- Profili, interruttore e novita (3.6)
+        PROFILE_OWN = "Profilo personaggio",
+        PROFILE_OWN_DESC = "Attivo, questo personaggio tiene la sua barra: posizione, dimensioni, colori, tutto. Disattivo, torna alle impostazioni condivise dall'intero account.",
+        PROFILE_USING_OWN = "Questo personaggio ha impostazioni proprie.",
+        PROFILE_USING_SHARED = "Questo personaggio usa le impostazioni condivise.",
+        PROFILE_FROM_SHARED = "Copia le condivise",
+        PROFILE_FROM_SHARED_DESC = "Sostituisce le impostazioni di questo personaggio con quelle condivise. La via del ritorno quando hai cambiato troppo.",
+        PROFILE_TO_SHARED = "Condividi queste",
+        PROFILE_TO_SHARED_DESC = "Quello che vedi qui diventa l'impostazione condivisa: la usano tutti i personaggi senza profilo proprio.",
+        ENABLED = "Barra attiva",
+        ENABLED_DESC = "Disattivo, la barra sparisce del tutto, a qualsiasi livello. Anche la barra del gioco resta nascosta, finché \"Nascondi barra Blizzard\" è attiva. Anche: clic centrale sul pulsante della minimappa, /mxp off, o una scorciatoia da tastiera (Menu di gioco > Tasti > MyXPBar).",
+        MAX_LEVEL_REP = "Reputazione al livello massimo",
+        MAX_LEVEL_REP_DESC = "Al livello massimo la barra mostra la reputazione che segui invece di sparire. Senza una fazione seguita, sparisce comunque.",
+        NEWS_LOGIN = "Annuncia gli aggiornamenti",
+        NEWS_LOGIN_DESC = "Una riga in chat quando l'addon è stato aggiornato, una sola volta per versione e nulla di più.",
+        NEWS_TITLE = "Novità",
+        NEWS_CHAT = "aggiornato a %s  -  scrivi /mxp news per vedere cosa cambia.",
+        NEWS_CLOSE = "Capito",
+        NEWS_1 = "|cffffd100Impostazioni per ogni personaggio.|r Sposta la barra su un personaggio e gli altri tengono la loro: attiva \"Profilo personaggio\".",
+        NEWS_2 = "|cffffd100Un interruttore per la barra.|r \"Barra attiva\", un clic centrale sul pulsante della minimappa o una scorciatoia da tastiera la nascondono a qualsiasi livello. E al livello massimo può mostrare la reputazione che segui.",
+        NEWS_3 = "|cffffd100Questo pannello.|r Si apre una volta dopo un aggiornamento, con una riga in chat. /mxp news lo riapre.",
+        CHAT_BAR_ON = "barra attiva.",
+        CHAT_BAR_OFF = "barra disattivata. /mxp on la riporta.",
     },
 }
 
@@ -683,15 +858,25 @@ function ns.LanguageName(key)
     return key
 end
 
+-- The chosen language. It is saved for the whole account, next to the
+-- character profiles (see Profiles.lua), never inside one of them.
+function ns.Language()
+    local db = MyXPBarDB
+    local lang = (type(db) == "table") and db.language or nil
+    return lang or ns.DefaultLanguage()
+end
+
+function ns.SetLanguage(lang)
+    if type(MyXPBarDB) == "table" then MyXPBarDB.language = lang end
+end
+
 -- The gothic title font has no Cyrillic outside the Russian client
 function ns.UsesLatinFont()
-    local lang = (ns.db and ns.db.language) or ns.DefaultLanguage()
-    return lang ~= "ru" or GetLocale() == "ruRU"
+    return ns.Language() ~= "ru" or GetLocale() == "ruRU"
 end
 
 -- Translated text for a key, in the chosen language
 function ns.T(key)
-    local lang = (ns.db and ns.db.language) or ns.DefaultLanguage()
-    local strings = L[lang] or L.en
+    local strings = L[ns.Language()] or L.en
     return strings[key] or L.en[key] or key
 end

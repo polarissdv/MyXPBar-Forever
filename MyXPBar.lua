@@ -45,7 +45,10 @@ function ns.TextureFile(id)
     return BAR_TEXTURE
 end
 
+-- One profile worth of settings. The learned XP per level is not here: it is
+-- the same for every character and lives beside the profiles (Profiles.lua).
 ns.defaults = {
+    enabled = true,    -- Unchecked: no bar at all, the game keeps its own
     width = 500,
     height = 24,
     xpColor = { r = 0.6, g = 0.4, b = 1 },     -- PURPLE
@@ -66,8 +69,9 @@ ns.defaults = {
     showSession = true,  -- XP per hour and time left under the bar
     showQuestXP = false, -- XP of the finished quests waiting in the quest log
     horizontalMenu = true, -- Options menu in two columns instead of one tall one
+    maxLevelRep = false, -- At max level: the tracked reputation takes the bar
+    newsOnLogin = true,  -- One chat line when the addon was updated
     targetLevel = 0,     -- 0: next level
-    xpPerLevel = {},     -- Learned XP needed per level, for the estimate
     point = { "CENTER", "CENTER", 0, -200 },
     showMinimap = true,
     minimap = { angle = 225 },
@@ -119,12 +123,26 @@ local function IsMaxLevel()
     local maxLevel = GetMaxLevelForPlayerExpansion and GetMaxLevelForPlayerExpansion() or FALLBACK_MAX_LEVEL
     return UnitLevel("player") >= maxLevel
 end
+ns.IsMaxLevel = IsMaxLevel
 
+-- The option that switches the whole bar off
+local function BarEnabled()
+    return ns.db.enabled ~= false
+end
+ns.BarEnabled = BarEnabled
+
+-- Is there XP to show? No at max level, and none when the player stopped
+-- gaining XP on purpose.
 local function ShouldShowBar()
+    if not BarEnabled() then return false end
     if IsXPUserDisabled and IsXPUserDisabled() then return false end
     return not IsMaxLevel()
 end
 ns.ShouldShowBar = ShouldShowBar
+
+-- Max level with the reputation option on: the bar stays, showing the tracked
+-- faction instead of the XP. Defined further down, next to the reputation.
+local RepOnly
 
 local function PlayXPSound()
     if not ns.db.playSound then return end
@@ -161,7 +179,20 @@ local function ApplyBlizzardFrame(frame)
 end
 
 local function UpdateBlizzardBar()
-    local wantHidden = ns.db.hideBlizzard and ShouldShowBar()
+    local wantHidden
+    if not ns.db.hideBlizzard then
+        wantHidden = false
+    elseif not BarEnabled() then
+        -- The bar was switched off on purpose: the player wants no bar at
+        -- all, not the one of the game in its place
+        wantHidden = true
+    else
+        -- At max level there is no XP left to show, so the game gets its
+        -- bars back for reputation and honor - unless the reputation is
+        -- already on our own bar
+        wantHidden = ShouldShowBar() or RepOnly()
+    end
+
     local changed = (wantHidden ~= hideBlizzard)
     hideBlizzard = wantHidden
 
@@ -433,7 +464,11 @@ local function SetXPTextsShown(show)
     pctText:SetShown(show)
 end
 
+-- true while the reputation stands in for the XP bar at max level
+local repOnlyActive = false
+
 local function ShowReputation()
+    if repOnlyActive then return end -- Already on screen, permanently
     if not ns.db.showRepHover then return end
     -- The permanent bar already shows it: no need to cover the XP bar
     if ns.db.showRepBar and repStrip:IsShown() then return end
@@ -487,7 +522,50 @@ local function UpdateRepStrip()
 end
 ns.UpdateRepStrip = UpdateRepStrip
 
+-- Max level, the option is on, and a faction is tracked: the reputation
+-- replaces the XP on the bar instead of the bar disappearing.
+RepOnly = function()
+    if not BarEnabled() then return false end
+    if not ns.db.maxLevelRep then return false end
+    if ShouldShowBar() then return false end
+    if not IsMaxLevel() then return false end -- XP off by choice: nothing to show
+    return (GetWatchedReputation()) ~= nil
+end
+ns.RepOnly = RepOnly
+
+-- Everything that belongs to the XP, hidden or shown in one go
+local function SetRepOnly(on)
+    repOnlyActive = on
+    xpBar:SetShown(not on)
+    restedBar:SetShown(not on and ns.db.style ~= "restedbar")
+    underRested:SetShown(not on and ns.db.style == "restedbar")
+    questBar:SetShown(not on and ns.db.showQuestXP)
+    spark:SetShown(not on and ns.db.style == "spark")
+    for _, seg in ipairs(segments) do
+        seg:SetShown(not on and ns.db.style == "segments")
+    end
+    if on then
+        -- The opaque black of the hover bar would sit on top of the frame's
+        -- own background: here the bar keeps the background of the options
+        repBg:SetColorTexture(0, 0, 0, 0)
+        UpdateRepBar()
+        repBar:Show()
+        SetXPTextsShown(false)
+        subText:Hide()
+        sessionText:Hide()
+        repStrip:Hide()
+    else
+        repBg:SetColorTexture(0, 0, 0, 1)
+        repBar:Hide()
+        SetXPTextsShown(ns.db.showText)
+        subText:SetShown(ns.db.showRestedText or ns.db.showQuestXP)
+        sessionText:SetShown(ns.db.showSession)
+    end
+end
+ns.RepOnlyActive = function() return repOnlyActive end
+
 local function HideReputation()
+    if repOnlyActive then return end -- It is not a hover bar here
     if repBar:IsShown() then
         repBar:Hide()
         SetXPTextsShown(ns.db.showText)
@@ -627,6 +705,10 @@ function ns.ApplyLayout()
     subText:SetShown(db.showRestedText or db.showQuestXP)
     sessionText:SetShown(db.showSession)
     AnchorBottomTexts()
+
+    -- The lines above gave the XP layers back: hide them again if the
+    -- reputation is standing in for them
+    if repOnlyActive then SetRepOnly(true) end
 end
 
 -- =========================================================
@@ -795,10 +877,11 @@ end
 
 -- XP needed to go from this level to the next one
 local function XPForLevel(level)
-    local learned = ns.db.xpPerLevel[level]
+    local learnedXP = ns.XPPerLevel()
+    local learned = learnedXP[level]
     if learned then return learned end
     local bestLevel, bestValue
-    for known, value in pairs(ns.db.xpPerLevel) do
+    for known, value in pairs(learnedXP) do
         if not bestLevel or known > bestLevel then bestLevel, bestValue = known, value end
     end
     if not bestLevel then return nil end
@@ -968,7 +1051,21 @@ local lastLevel
 local function UpdateStatus()
     UpdateBlizzardBar()
 
-    -- 1. Check Max Level (Hide bar at max level or if XP is disabled)
+    -- 1. The bar can be switched off, and there is nothing to show at max
+    -- level - unless the tracked reputation takes its place.
+    if not BarEnabled() then
+        if repOnlyActive then SetRepOnly(false) end
+        mainFrame:Hide()
+        mainFrame:SetScript("OnUpdate", nil)
+        return
+    end
+    if RepOnly() and not ns.previewing then
+        SetRepOnly(true)
+        mainFrame:Show()
+        mainFrame:SetScript("OnUpdate", nil) -- Nothing to animate
+        return
+    end
+    if repOnlyActive then SetRepOnly(false) end
     if not ShouldShowBar() and not ns.previewing then
         mainFrame:Hide()
         mainFrame:SetScript("OnUpdate", nil) -- Nothing to animate while hidden
@@ -987,7 +1084,7 @@ local function UpdateStatus()
     lastLevel = level
 
     -- What this level needs is learned, for the "time left" estimate
-    ns.db.xpPerLevel[level] = maxXP
+    ns.XPPerLevel()[level] = maxXP
 
     local diff = currXP - lastXP
     if diff > 0 and not levelChanged then
@@ -997,7 +1094,7 @@ local function UpdateStatus()
         ShowGain(diff)
     elseif levelChanged then
         -- The end of the previous level plus the start of this one
-        local previous = ns.db.xpPerLevel[level - 1]
+        local previous = ns.XPPerLevel()[level - 1]
         session.xp = session.xp + currXP + (previous and math.max(previous - lastXP, 0) or 0)
         if not (ns.db.smooth and previous) then ShowLevelFlash() end -- Otherwise: once the bar is full
     end
@@ -1006,7 +1103,7 @@ local function UpdateStatus()
 
     -- 3. Visual update of bars. A level up fills the bar to the end before
     -- the new level starts, as long as the XP of the old level is known.
-    local levelUpFrom = levelChanged and ns.db.smooth and ns.db.xpPerLevel[level - 1] or nil
+    local levelUpFrom = levelChanged and ns.db.smooth and ns.XPPerLevel()[level - 1] or nil
     SetBarValues(currXP, math.min(currXP + rested, maxXP), maxXP,
         levelChanged and not levelUpFrom, levelUpFrom)
 
@@ -1084,94 +1181,6 @@ function ns.ResetPosition()
 end
 
 -- =========================================================
--- COMPACT SETTINGS (macro copy, see Persist.lua)
--- =========================================================
--- One line, fields in a fixed order, separated by ";" ("|" is an escape
--- character in WoW texts). Around 90 characters, a macro holds 255.
-local SETTINGS_VERSION = "1"
-local FLAG_FIELDS = {
-    "locked", "hideBlizzard", "playSound", "showText",
-    "showRestedText", "smooth", "showGains", "showMinimap",
-    "fullWidth", "showRepHover", -- 2.7: missing in older copies, defaults apply
-    "showRepBar", "showSession", -- 2.8
-    "horizontalMenu", -- 3.2
-    "showQuestXP", -- 2.9
-}
-
-local function ColorToHex(c)
-    return string.format("%02x%02x%02x",
-        math.floor(c.r * 255 + 0.5), math.floor(c.g * 255 + 0.5), math.floor(c.b * 255 + 0.5))
-end
-
-local function HexToColor(hex)
-    if not hex or not hex:match("^%x%x%x%x%x%x$") then return nil end
-    return {
-        r = tonumber(hex:sub(1, 2), 16) / 255,
-        g = tonumber(hex:sub(3, 4), 16) / 255,
-        b = tonumber(hex:sub(5, 6), 16) / 255,
-    }
-end
-
-local function EncodeSettings(db)
-    local flags = {}
-    for i, key in ipairs(FLAG_FIELDS) do flags[i] = db[key] and "1" or "0" end
-    local p = db.point
-    return table.concat({
-        SETTINGS_VERSION,
-        string.format("%d", db._savedAt or time()),
-        p[1], p[2], string.format("%.1f", p[3]), string.format("%.1f", p[4]),
-        string.format("%d", math.floor(db.width + 0.5)),
-        string.format("%d", math.floor(db.height + 0.5)),
-        ColorToHex(db.xpColor), ColorToHex(db.restedColor),
-        string.format("%d", math.floor(db.bgAlpha * 100 + 0.5)),
-        db.style,
-        table.concat(flags),
-        string.format("%d", math.floor(db.minimap.angle + 0.5)),
-        db.language or "",
-        string.format("%d", math.floor(db.targetLevel or 0)), -- 2.8, appended
-        db.texture or "default", -- 3.5, appended
-    }, ";")
-end
-
--- Returns a settings table, or nil if anything looks wrong
-local function DecodeSettings(data)
-    local f = { strsplit(";", data) }
-    if f[1] ~= SETTINGS_VERSION or #f < 15 then return nil end
-
-    local x, y = tonumber(f[5]), tonumber(f[6])
-    local width, height = tonumber(f[7]), tonumber(f[8])
-    local xpColor, restedColor = HexToColor(f[9]), HexToColor(f[10])
-    local alpha, angle = tonumber(f[11]), tonumber(f[14])
-    local anchor = "^%u+$"
-    if not (x and y and width and height and xpColor and restedColor and alpha and angle)
-        or not f[3]:match(anchor) or not f[4]:match(anchor)
-        or not f[12]:match("^%a+$") or not f[13]:match("^[01]+$") then
-        return nil
-    end
-
-    local settings = {
-        _savedAt = tonumber(f[2]),
-        point = { f[3], f[4], x, y },
-        width = width,
-        height = height,
-        xpColor = xpColor,
-        restedColor = restedColor,
-        bgAlpha = alpha / 100,
-        style = f[12],
-        minimap = { angle = angle },
-        language = f[15] ~= "" and f[15] or nil,
-        targetLevel = tonumber(f[16]), -- nil in copies written before 2.8
-        -- nil in copies written before 3.5: the default texture stays
-        texture = f[17] and f[17]:match("^%a+$") or nil,
-    }
-    for i, key in ipairs(FLAG_FIELDS) do
-        local bit = f[13]:sub(i, i)
-        if bit ~= "" then settings[key] = (bit == "1") end
-    end
-    return settings
-end
-
--- =========================================================
 -- EVENTS
 -- =========================================================
 local eventFrame = CreateFrame("Frame")
@@ -1192,21 +1201,17 @@ eventFrame:SetScript("OnEvent", function(self, event, arg1)
     if event == "ADDON_LOADED" then
         if arg1 ~= ADDON_NAME then return end
         self:UnregisterEvent("ADDON_LOADED")
-        MyXPBarDB = CopyDefaults(ns.defaults, MyXPBarDB)
-        ns.db = MyXPBarDB
-        if not ns.db.language then ns.db.language = ns.DefaultLanguage() end
-        ns.ApplyLayout()
-        for _, callback in ipairs(ns.dbReadyCallbacks) do callback() end
-
-        -- Forever beta: after a relog the settings come back from the CVar
-        -- copy, after a restart from the macro copy
-        ns.Persist.Register("MyXPBarDB", function() return MyXPBarDB end, function(saved)
-            ns.Persist.Replace(MyXPBarDB, saved, ns.defaults)
-            if not ns.db.language then ns.db.language = ns.DefaultLanguage() end
+        MyXPBarDB = MyXPBarDB or {}
+        -- Reads the saved variables, moves older settings to the shared
+        -- profile, points ns.db at the right one and sets up the copies
+        ns.Profiles.Init(MyXPBarDB, function()
+            -- A saved copy came back: everything is redrawn from it
             ns.Refresh()
             for _, callback in ipairs(ns.dbReadyCallbacks) do callback() end
             if ns.RefreshOptions then ns.RefreshOptions() end
-        end, { name = "MyXPBar", encode = EncodeSettings, decode = DecodeSettings })
+        end)
+        ns.ApplyLayout()
+        for _, callback in ipairs(ns.dbReadyCallbacks) do callback() end
         return
     elseif event == "PLAYER_ENTERING_WORLD" then
         -- Reset XP memory on login to avoid calculation bugs
@@ -1215,6 +1220,12 @@ eventFrame:SetScript("OnEvent", function(self, event, arg1)
         RequestUpdate(true) -- No animation on login
         return
     elseif event == "UPDATE_FACTION" then
+        -- Max level: tracking a faction (or dropping it) decides whether the
+        -- bar is on screen at all
+        if ns.db.maxLevelRep and not ShouldShowBar() then
+            RequestUpdate()
+            return
+        end
         if repBar:IsShown() and not UpdateRepBar() then HideReputation() end
         UpdateRepStrip() -- Reputation gained without XP (turn-ins, cloth donations)
         return

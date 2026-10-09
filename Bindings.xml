@@ -1,0 +1,7 @@
+<Bindings>
+    <!-- Hide or show the bar without opening the options. The name of the
+         header and of the binding are set in Options.lua, translated. -->
+    <Binding name="MYXPBAR_TOGGLE" header="MYXPBAR">
+        MyXPBar_ToggleBar()
+    </Binding>
+</Bindings>
