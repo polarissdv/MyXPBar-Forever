@@ -807,7 +807,6 @@ OptionCheck("MAX_LEVEL_REP", "MAX_LEVEL_REP_DESC", "maxLevelRep")
 OptionCheck("SHOW_SESSION", "SHOW_SESSION_DESC", "showSession")
 OptionCheck("FULL_WIDTH", "FULL_WIDTH_DESC", "fullWidth")
 OptionCheck("QUEST_XP", "QUEST_XP_DESC", "showQuestXP")
-OptionCheck("HORIZONTAL_MENU", "HORIZONTAL_MENU_DESC", "horizontalMenu", function() ns.LayoutOptions() end)
 OptionCheck("NEWS_LOGIN", "NEWS_LOGIN_DESC", "newsOnLogin")
 
 -- One profile per character, or the settings shared by the whole account
@@ -815,9 +814,8 @@ local profileCheck = CreateCheck("PROFILE_OWN", "PROFILE_OWN_DESC",
     function() return ns.Profiles.UsesOwn() end,
     function(v)
         ns.Profiles.SetOwn(v)
-        -- These two are settings like any other: they can differ per profile
+        -- The minimap button is a setting like any other: it can differ
         ns.UpdateMinimapButton()
-        ns.LayoutOptions()
     end)
 -- Its tooltip also names the character and says which settings are in use
 profileCheck:SetScript("OnEnter", function(self)
@@ -958,7 +956,6 @@ end
 local function AfterProfileChange()
     ns.Refresh()
     ns.UpdateMinimapButton()
-    ns.LayoutOptions()
     ns.RefreshOptions()
 end
 
@@ -993,20 +990,17 @@ local resetAllBtn = CreateButton(footer, "RESET_ALL", 100, 26, function()
     ns.db.own = own
     ns.Refresh()
     ns.UpdateMinimapButton()
-    ns.LayoutOptions()
     ns.RefreshOptions()
 end)
 local footerButtons = { resetPosBtn, fromSharedBtn, toSharedBtn, resetAllBtn }
 cursorY = cursorY - 36
 
-local HINT_Y = cursorY
 local hint = footer:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
 hint:SetPoint("TOP", footer, "TOP", 0, cursorY)
 hint:SetWidth(FULL_W)
 Localize(hint, "HINT")
 cursorY = cursorY - 36
 
-local SIGNATURE_Y = cursorY
 local signature = footer:CreateFontString(nil, "OVERLAY")
 signature:SetFontObject(FontSmall)
 signature:SetTextColor(0.75, 0.62, 0.35)
@@ -1019,59 +1013,35 @@ sigRight:SetPoint("LEFT", signature, "RIGHT", 8, 0)
 cursorY = cursorY - 26
 
 FinishColumn()
-local FOOTER_H = footer:GetHeight() -- With a single row of buttons
 
 -- =========================================================
--- LAYOUT: the two columns side by side, or one under the other
+-- LAYOUT: the two columns, side by side
 -- =========================================================
+-- They used to be stackable, one column under the other. That menu was
+-- around 1240 units tall where a screen offers 768: its lower half, the
+-- buttons included, was simply out of reach. Two columns it is.
 local GAP = 14 -- Between the columns and the footer
 
 function ns.LayoutOptions()
-    local horizontal = ns.db.horizontalMenu
     columnA:ClearAllPoints()
     columnB:ClearAllPoints()
     footer:ClearAllPoints()
     columnA:SetPoint("TOPLEFT", panel, "TOPLEFT", PAD, CONTENT_TOP)
+    columnB:SetPoint("TOPLEFT", panel, "TOPLEFT", PAD + CONTENT_W + GUTTER, CONTENT_TOP)
 
-    local footerWidth, contentHeight
-    if horizontal then
-        columnB:SetPoint("TOPLEFT", panel, "TOPLEFT", PAD + CONTENT_W + GUTTER, CONTENT_TOP)
-        footerWidth = FULL_W
-        contentHeight = math.max(columnA:GetHeight(), columnB:GetHeight())
-    else
-        columnB:SetPoint("TOPLEFT", columnA, "BOTTOMLEFT", 0, -GAP)
-        footerWidth = CONTENT_W
-        contentHeight = columnA:GetHeight() + GAP + columnB:GetHeight()
-    end
-
-    footer:SetWidth(footerWidth)
+    local contentHeight = math.max(columnA:GetHeight(), columnB:GetHeight())
+    footer:SetWidth(FULL_W)
     footer:SetPoint("TOPLEFT", panel, "TOPLEFT", PAD, CONTENT_TOP - contentHeight - GAP)
 
-    -- The footer widgets follow the width of the menu
-    footerOrnament:SetWidth(footerWidth)
-    hint:SetWidth(footerWidth)
-
-    -- The four buttons: one row in the wide menu, two in the narrow one
-    local columns = horizontal and 4 or 2
-    local buttonWidth = (footerWidth - BUTTON_GAP * (columns - 1)) / columns
+    -- The four buttons share the width of the menu, on one row
+    local buttonWidth = (FULL_W - BUTTON_GAP * 3) / 4
     for i, button in ipairs(footerButtons) do
-        local col = (i - 1) % columns
-        local row = math.floor((i - 1) / columns)
         button:SetWidth(buttonWidth)
         button:ClearAllPoints()
-        button:SetPoint("TOPLEFT", footer, "TOPLEFT",
-            col * (buttonWidth + BUTTON_GAP), BUTTON_Y - row * 30)
+        button:SetPoint("TOPLEFT", footer, "TOPLEFT", (i - 1) * (buttonWidth + BUTTON_GAP), BUTTON_Y)
     end
 
-    -- A second row of buttons pushes everything under it down
-    local extra = (columns == 4) and 0 or 30
-    hint:ClearAllPoints()
-    hint:SetPoint("TOP", footer, "TOP", 0, HINT_Y - extra)
-    signature:ClearAllPoints()
-    signature:SetPoint("TOP", footer, "TOP", 0, SIGNATURE_Y - extra)
-    footer:SetHeight(FOOTER_H + extra)
-
-    panel:SetSize(PAD * 2 + footerWidth,
+    panel:SetSize(PAD * 2 + FULL_W,
         -CONTENT_TOP + contentHeight + GAP + footer:GetHeight() + 16)
 end
 

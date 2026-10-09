@@ -77,7 +77,7 @@ applied live.
 | Texture | Default, glaze, satin, minimal, glass, bevel, tube, brushed, linen, diagonal, ember |
 | Size | Width (200 px up to the width of your screen), height (8 to 60 px) and target level |
 | Colors | 8 quick colors or the full color wheel, for the XP bar and the rested XP, plus background opacity |
-| Options | Bar enabled, reputation at max level, character profile, lock the bar, hide the Blizzard bar, sound on XP gain, texts on the bar, rested text, smooth animation, floating +XP, minimap button, full screen width, reputation on hover, reputation bar, XP per hour, XP of finished quests, announce updates |
+| Options | Bar enabled, lock the bar, hide the Blizzard bar, sound on XP gain, texts on the bar, rested text, smooth animation, floating +XP, minimap button, reputation bar, reputation on hover, reputation at max level, XP per hour, full screen width, XP of finished quests, announce updates, character profile |
 | Bottom row | Recenter the bar, copy the shared settings onto this character, share the ones you see, reset everything |
 
 ## Installation

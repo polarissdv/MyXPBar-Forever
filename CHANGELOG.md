@@ -23,6 +23,10 @@
   whenever you want, and "Announce updates" turns the whole thing off.
 - The language is now saved for the whole account, next to the profiles, so it
   no longer changes from one character to the next.
+- **The narrow options menu is gone**, and with it the "Wide options menu"
+  option from 3.2. Stacked in one column the menu was around 1240 units tall
+  where a screen offers 768: its lower half, the buttons included, was out of
+  reach. The menu is always two columns side by side now.
 - Asked for by a player on CurseForge. Thank you.
 
 ## 3.5

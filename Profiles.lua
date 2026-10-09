@@ -104,6 +104,10 @@ local function Migrate()
 
     c.shared.xpPerLevel = nil
     c.shared.own = nil -- Only a character profile carries it
+
+    -- The menu is always two columns now: the setting is gone for good
+    c.horizontalMenu = nil
+    c.shared.horizontalMenu = nil
     ns.CopyDefaults(ns.defaults, c.shared)
 
     -- Nothing reads the old flat keys any more
@@ -112,6 +116,7 @@ local function Migrate()
     for _, profile in pairs(c.profiles) do
         if type(profile) == "table" then
             profile.xpPerLevel = nil
+            profile.horizontalMenu = nil
             ns.CopyDefaults(ns.defaults, profile)
         end
     end
@@ -220,7 +225,7 @@ local FLAG_FIELDS = {
     "showRestedText", "smooth", "showGains", "showMinimap",
     "fullWidth", "showRepHover", -- 2.7: missing in older copies, defaults apply
     "showRepBar", "showSession", -- 2.8
-    "horizontalMenu", -- 3.2
+    "horizontalMenu", -- 3.2, dead since 3.6: the flags are read by position
     "showQuestXP", -- 2.9
     "enabled", "maxLevelRep", "newsOnLogin", "own", -- 3.6
 }

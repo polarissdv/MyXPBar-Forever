@@ -68,7 +68,6 @@ ns.defaults = {
     showRepBar = false,  -- A thin reputation bar under the XP bar
     showSession = true,  -- XP per hour and time left under the bar
     showQuestXP = false, -- XP of the finished quests waiting in the quest log
-    horizontalMenu = true, -- Options menu in two columns instead of one tall one
     maxLevelRep = false, -- At max level: the tracked reputation takes the bar
     newsOnLogin = true,  -- One chat line when the addon was updated
     targetLevel = 0,     -- 0: next level
