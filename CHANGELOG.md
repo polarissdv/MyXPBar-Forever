@@ -1,5 +1,23 @@
 # MyXPBar - Changelog
 
+## 3.7
+- **Profiles have names.** Create one from the bar you have in front of you,
+  give it a name, and pick it again on any character: the list sits at the
+  bottom of the options menu, next to the language. "New" makes one from what
+  is on screen, "Delete" removes the one in use and sends the characters that
+  had it back to the first one.
+- **Nothing to save.** Move the bar, change a colour, a texture, an option:
+  it goes into the profile that character uses, right away. Another character
+  picking the same profile gets the same bar, and a character that picks
+  another one keeps its own.
+- **Your settings were kept.** What every character shared becomes the first
+  profile, and a character that had its own settings in 3.6 keeps them as a
+  profile of its own, named after the character.
+- The "Character profile" checkbox of 3.6 is gone: picking a profile in the
+  list is what gives it to a character now.
+- The minimap tooltip says which profile is in use, and the list of profiles
+  names the character it is about.
+
 ## 3.6
 - **One profile per character.** Move the bar on one character and your others
   keep theirs. Position, size, colours, style, texture, every option: a

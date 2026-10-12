@@ -510,6 +510,17 @@ local function CreateButton(parent, labelKey, width, height, onClick)
     return b
 end
 
+-- A title and an explanation, on anything the mouse can reach
+local function Tip(frame, labelKey, descKey, anchor)
+    frame:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, anchor or "ANCHOR_RIGHT")
+        GameTooltip:SetText(T(labelKey))
+        GameTooltip:AddLine(T(descKey), 1, 1, 1, true)
+        GameTooltip:Show()
+    end)
+    frame:SetScript("OnLeave", function() GameTooltip:Hide() end)
+end
+
 -- =========================================================
 -- CONTENT
 -- =========================================================
@@ -808,26 +819,6 @@ OptionCheck("SHOW_SESSION", "SHOW_SESSION_DESC", "showSession")
 OptionCheck("FULL_WIDTH", "FULL_WIDTH_DESC", "fullWidth")
 OptionCheck("QUEST_XP", "QUEST_XP_DESC", "showQuestXP")
 OptionCheck("NEWS_LOGIN", "NEWS_LOGIN_DESC", "newsOnLogin")
-
--- One profile per character, or the settings shared by the whole account
-local profileCheck = CreateCheck("PROFILE_OWN", "PROFILE_OWN_DESC",
-    function() return ns.Profiles.UsesOwn() end,
-    function(v)
-        ns.Profiles.SetOwn(v)
-        -- The minimap button is a setting like any other: it can differ
-        ns.UpdateMinimapButton()
-    end)
--- Its tooltip also names the character and says which settings are in use
-profileCheck:SetScript("OnEnter", function(self)
-    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-    GameTooltip:SetText(T("PROFILE_OWN"))
-    GameTooltip:AddLine(T("PROFILE_OWN_DESC"), 1, 1, 1, true)
-    GameTooltip:AddLine(" ")
-    GameTooltip:AddLine(ns.Profiles.CharName(), GOLD[1], GOLD[2], GOLD[3])
-    GameTooltip:AddLine(T(ns.Profiles.UsesOwn() and "PROFILE_USING_OWN" or "PROFILE_USING_SHARED"),
-        0.7, 0.7, 0.7, true)
-    GameTooltip:Show()
-end)
 EndChecks()
 cursorY = cursorY - 34
 
@@ -932,6 +923,224 @@ tinsert(refreshers, function()
         end
     end
 end)
+
+-- =========================================================
+-- PROFILES
+-- =========================================================
+-- On the same row as the language: the menu is as tall as the screen allows.
+-- Picking one gives it to this character; everything changed afterwards is
+-- written in it, so there is nothing to save by hand.
+local function ProfileChanged()
+    ns.Refresh()
+    ns.UpdateMinimapButton()
+    ns.RefreshOptions()
+end
+
+local profileLabel = footer:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+profileLabel:SetPoint("TOPLEFT", 300, cursorY)
+Localize(profileLabel, "PROFILE")
+
+local PROFILE_WIDTH = 170
+local profileButton = CreateFrame("Button", nil, footer, "UIPanelButtonTemplate")
+profileButton:SetSize(PROFILE_WIDTH, 22)
+profileButton:SetPoint("TOPLEFT", 365, cursorY + 4)
+-- The tooltip also names the character the profile is given to
+profileButton:SetScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_TOP")
+    GameTooltip:SetText(T("PROFILE"))
+    GameTooltip:AddLine(T("PROFILE_DESC"), 1, 1, 1, true)
+    GameTooltip:AddLine(" ")
+    GameTooltip:AddLine(ns.Profiles.CharName(), GOLD[1], GOLD[2], GOLD[3])
+    GameTooltip:Show()
+end)
+profileButton:SetScript("OnLeave", function() GameTooltip:Hide() end)
+
+local profileArrow = profileButton:CreateTexture(nil, "OVERLAY")
+profileArrow:SetPoint("RIGHT", -6, 0)
+profileArrow:SetTexture(WHITE)
+profileArrow:SetVertexColor(GOLD[1], GOLD[2], GOLD[3])
+profileArrow:SetRotation(math.rad(45))
+profileArrow:SetSize(7, 7)
+
+-- The list belongs to UIParent, not to the panel: a click on the panel
+-- raises it (SetToplevel) and it would cover the list, eating the clicks.
+local profileList = CreateFrame("Frame", "MyXPBarProfileList", UIParent, "BackdropTemplate")
+profileList:SetFrameStrata("FULLSCREEN_DIALOG")
+profileList:SetToplevel(true)
+profileList:SetBackdrop(BOX_BACKDROP)
+profileList:SetBackdropColor(0, 0, 0, 0.95)
+profileList:SetBackdropBorderColor(GOLD[1], GOLD[2], GOLD[3], 1)
+profileList:SetWidth(PROFILE_WIDTH)
+profileList:SetPoint("TOPLEFT", profileButton, "BOTTOMLEFT", 0, 0)
+profileList:EnableMouse(true)
+profileList:Hide()
+
+-- The profiles change while the menu is open, so the rows are built again
+-- every time the list opens, and kept for the next time
+local profileRows = {}
+local function BuildProfileList()
+    local names = ns.Profiles.List()
+    local current = ns.Profiles.Current()
+    for i, name in ipairs(names) do
+        local row = profileRows[i]
+        if not row then
+            row = CreateFrame("Button", nil, profileList)
+            row:SetSize(PROFILE_WIDTH - 10, 20)
+            row:SetPoint("TOPLEFT", 5, -5 - (i - 1) * 20)
+            row.highlight = row:CreateTexture(nil, "BACKGROUND")
+            row.highlight:SetAllPoints()
+            row.highlight:SetColorTexture(GOLD[1], GOLD[2], GOLD[3], 0.25)
+            row.highlight:Hide()
+            row.text = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+            row.text:SetPoint("LEFT", 6, 0)
+            row.text:SetPoint("RIGHT", -6, 0)
+            row.text:SetJustifyH("LEFT")
+            row:SetScript("OnEnter", function(self) self.highlight:Show() end)
+            row:SetScript("OnLeave", function(self) self.highlight:Hide() end)
+            row:SetScript("OnClick", function(self)
+                profileList:Hide()
+                if self.value == ns.Profiles.Current() then return end
+                PlayUISound("IG_MAINMENU_OPTION_CHECKBOX_ON")
+                ns.Profiles.Use(self.value)
+                ProfileChanged()
+            end)
+            profileRows[i] = row
+        end
+        row.value = name
+        row.text:SetText(name)
+        if name == current then
+            row.text:SetTextColor(GOLD[1], GOLD[2], GOLD[3])
+        else
+            row.text:SetTextColor(1, 1, 1)
+        end
+        row:Show()
+    end
+    for i = #names + 1, #profileRows do profileRows[i]:Hide() end
+    profileList:SetHeight(10 + math.max(#names, 1) * 20)
+end
+
+profileButton:SetScript("OnClick", function()
+    PlayUISound("IG_MAINMENU_OPTION_CHECKBOX_ON")
+    if profileList:IsShown() then
+        profileList:Hide()
+        return
+    end
+    BuildProfileList()
+    profileList:Show()
+end)
+
+-- Closes a short moment after the mouse left both the button and the list,
+-- so going from one to the other never closes it
+local profileAway = 0
+profileList:SetScript("OnShow", function() profileAway = 0 end)
+profileList:SetScript("OnUpdate", function(self, elapsed)
+    if self:IsMouseOver(4, -4, -4, 4) or profileButton:IsMouseOver(4, -4, -4, 4) then
+        profileAway = 0
+        return
+    end
+    profileAway = profileAway + elapsed
+    if profileAway > 0.6 then self:Hide() end
+end)
+panel:HookScript("OnHide", function() profileList:Hide() end)
+
+-- A short message in the chat, for what the menu cannot show
+local function ProfileMessage(key)
+    local r, g, b = Accent()
+    DEFAULT_CHAT_FRAME:AddMessage(string.format("|cff%02x%02x%02xMyXPBar|r %s",
+        math.floor(r * 255), math.floor(g * 255), math.floor(b * 255), T(key)))
+end
+
+-- The edit box of a popup, whichever name this client gives it
+local function PopupEditBox(popup)
+    if popup.editBox then return popup.editBox end
+    if popup.GetEditBox then return popup:GetEditBox() end
+    local name = popup.GetName and popup:GetName()
+    return name and _G[name .. "EditBox"] or nil
+end
+
+local function CreateProfile(box)
+    local wanted = box and box:GetText() or ""
+    local name, reason = ns.Profiles.Create(wanted)
+    if not name then
+        ProfileMessage(reason)
+        return
+    end
+    PlayUISound("IG_MAINMENU_OPTION_CHECKBOX_ON")
+    ProfileChanged()
+end
+
+StaticPopupDialogs["MYXPBAR_NEW_PROFILE"] = {
+    text = "%s",
+    button1 = ACCEPT or "OK",
+    button2 = CANCEL or "Cancel",
+    hasEditBox = true,
+    maxLetters = 20,
+    timeout = 0,
+    whileDead = true,
+    hideOnEscape = true,
+    preferredIndex = 3, -- Away from the Blizzard popups that taint
+    OnShow = function(self)
+        local box = PopupEditBox(self)
+        if box then
+            box:SetText("")
+            box:SetFocus()
+        end
+    end,
+    OnAccept = function(self) CreateProfile(PopupEditBox(self)) end,
+    EditBoxOnEnterPressed = function(self)
+        local popup = self:GetParent()
+        CreateProfile(self)
+        popup:Hide()
+    end,
+    EditBoxOnEscapePressed = function(self) self:GetParent():Hide() end,
+}
+
+-- The name is kept here rather than passed through the popup: the clients
+-- do not all hand the same arguments to OnAccept
+local deleting
+
+StaticPopupDialogs["MYXPBAR_DELETE_PROFILE"] = {
+    text = "%s",
+    button1 = YES or ACCEPT or "OK",
+    button2 = NO or CANCEL or "Cancel",
+    timeout = 0,
+    whileDead = true,
+    hideOnEscape = true,
+    preferredIndex = 3,
+    OnAccept = function()
+        if deleting and ns.Profiles.Delete(deleting) then
+            PlayUISound("IG_MAINMENU_OPTION_CHECKBOX_OFF")
+            ProfileChanged()
+        end
+        deleting = nil
+    end,
+    OnCancel = function() deleting = nil end,
+}
+
+local newProfileBtn = CreateButton(footer, "PROFILE_NEW", 95, 22, function()
+    StaticPopup_Show("MYXPBAR_NEW_PROFILE", T("PROFILE_NEW_PROMPT"))
+end)
+newProfileBtn:SetPoint("TOPLEFT", 543, cursorY + 4)
+Tip(newProfileBtn, "PROFILE_NEW", "PROFILE_NEW_DESC", "ANCHOR_TOP")
+
+local deleteProfileBtn = CreateButton(footer, "PROFILE_DELETE", 105, 22, function()
+    deleting = ns.Profiles.Current()
+    StaticPopup_Show("MYXPBAR_DELETE_PROFILE", string.format(T("PROFILE_DELETE_PROMPT"), deleting))
+end)
+deleteProfileBtn:SetPoint("TOPLEFT", 645, cursorY + 4)
+Tip(deleteProfileBtn, "PROFILE_DELETE", "PROFILE_DELETE_DESC", "ANCHOR_TOP")
+
+tinsert(refreshers, function()
+    profileButton:SetText(ns.Profiles.Current() or "?")
+    -- The last profile cannot go: the addon would have nothing to read
+    if ns.Profiles.Count() > 1 then
+        deleteProfileBtn:Enable()
+    else
+        deleteProfileBtn:Disable()
+    end
+    if profileList:IsShown() then BuildProfileList() end
+end)
+
 cursorY = cursorY - 34
 
 -- Footer
@@ -943,56 +1152,21 @@ cursorY = cursorY - 18
 local BUTTON_Y = cursorY -- LayoutOptions places the row itself
 local BUTTON_GAP = 8
 
-local function ProfileTip(frame, labelKey, descKey)
-    frame:SetScript("OnEnter", function(self)
-        GameTooltip:SetOwner(self, "ANCHOR_TOP")
-        GameTooltip:SetText(T(labelKey))
-        GameTooltip:AddLine(T(descKey), 1, 1, 1, true)
-        GameTooltip:Show()
-    end)
-    frame:SetScript("OnLeave", function() GameTooltip:Hide() end)
-end
-
-local function AfterProfileChange()
-    ns.Refresh()
-    ns.UpdateMinimapButton()
-    ns.RefreshOptions()
-end
-
 local resetPosBtn = CreateButton(footer, "RESET_POSITION", 100, 26, function()
     ns.ResetPosition()
 end)
 
-local fromSharedBtn = CreateButton(footer, "PROFILE_FROM_SHARED", 100, 26, function()
-    ns.Profiles.CopyFromShared()
-    AfterProfileChange()
-end)
-ProfileTip(fromSharedBtn, "PROFILE_FROM_SHARED", "PROFILE_FROM_SHARED_DESC")
-
-local toSharedBtn = CreateButton(footer, "PROFILE_TO_SHARED", 100, 26, function()
-    ns.Profiles.SaveAsShared()
-    AfterProfileChange()
-end)
-ProfileTip(toSharedBtn, "PROFILE_TO_SHARED", "PROFILE_TO_SHARED_DESC")
-
-tinsert(refreshers, function()
-    -- Nothing to copy from the shared settings while they are the ones in use
-    if ns.Profiles.UsesOwn() then fromSharedBtn:Enable() else fromSharedBtn:Disable() end
-end)
-
 local resetAllBtn = CreateButton(footer, "RESET_ALL", 100, 26, function()
-    -- Only the settings in use: the other profiles and the language stay
-    local own = ns.db.own
+    -- Only the profile in use: the other profiles and the language stay
     local angle = ns.db.minimap.angle
     for k in pairs(ns.db) do ns.db[k] = nil end
     ns.CopyDefaults(ns.defaults, ns.db)
     ns.db.minimap.angle = angle
-    ns.db.own = own
     ns.Refresh()
     ns.UpdateMinimapButton()
     ns.RefreshOptions()
 end)
-local footerButtons = { resetPosBtn, fromSharedBtn, toSharedBtn, resetAllBtn }
+local footerButtons = { resetPosBtn, resetAllBtn }
 cursorY = cursorY - 36
 
 local hint = footer:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
@@ -1033,8 +1207,9 @@ function ns.LayoutOptions()
     footer:SetWidth(FULL_W)
     footer:SetPoint("TOPLEFT", panel, "TOPLEFT", PAD, CONTENT_TOP - contentHeight - GAP)
 
-    -- The four buttons share the width of the menu, on one row
-    local buttonWidth = (FULL_W - BUTTON_GAP * 3) / 4
+    -- The buttons share the width of the menu, on one row
+    local count = #footerButtons
+    local buttonWidth = (FULL_W - BUTTON_GAP * (count - 1)) / count
     for i, button in ipairs(footerButtons) do
         button:SetWidth(buttonWidth)
         button:ClearAllPoints()
@@ -1310,6 +1485,8 @@ mm:SetScript("OnEnter", function(self)
             GameTooltip:AddDoubleLine(T("TT_RESTED"), string.format("%.1f%%", rested / max * 100), 0.8, 0.8, 0.8, 0.4, 0.7, 1)
         end
     end
+    GameTooltip:AddDoubleLine(T("PROFILE"), ns.Profiles.Current() or "?",
+        0.8, 0.8, 0.8, GOLD[1], GOLD[2], GOLD[3])
     GameTooltip:AddLine(" ")
     GameTooltip:AddLine(T("TT_LEFT_CLICK"), 0.7, 0.7, 0.7)
     GameTooltip:AddLine(T("TT_RIGHT_CLICK"), 0.7, 0.7, 0.7)

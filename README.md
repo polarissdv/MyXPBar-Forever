@@ -7,7 +7,7 @@
 **A clean, lightweight and fully customizable XP bar for World of Warcraft: Forever.**
 
 [![CurseForge](https://img.shields.io/badge/CurseForge-MyXPBar%20Forever-F16436?logo=curseforge&logoColor=white)](https://www.curseforge.com/wow/addons/myxpbar-forever)
-![Version](https://img.shields.io/badge/version-3.6-9966ff)
+![Version](https://img.shields.io/badge/version-3.7-9966ff)
 ![Interface](https://img.shields.io/badge/WoW%3A%20Forever-1.60.x%20(16001)-c8a14a)
 [![Support](https://img.shields.io/badge/Support-TipeeeStream-ff7b00)](https://www.tipeeestream.com/polarzz88/)
 
@@ -26,9 +26,10 @@ World of Warcraft style. No libraries, no dependencies.
 
 - **Replaces the Blizzard XP bar** — the default bar is hidden automatically, and comes back at max
   level for reputation and honor.
-- **One profile per character** — tick **Character profile** and this character keeps its own bar.
-  Position, size, colors, style, texture, options: everything can differ from one character to the
-  next, or stay shared by the whole account, your call per character.
+- **Profiles with names** — make one from the bar you have, name it, and pick it again on any
+  character from the list at the bottom of the menu. Position, size, colors, style, texture,
+  options: everything lives in the profile, and everything you change goes into it right away,
+  with nothing to save by hand.
 - **A switch for the bar** — one checkbox, a middle click on the minimap button, a key binding or
   `/mxp off` hides the bar at any level, without disabling the addon. The bar of the game stays
   hidden too, as long as you asked for it to be.
@@ -77,8 +78,8 @@ applied live.
 | Texture | Default, glaze, satin, minimal, glass, bevel, tube, brushed, linen, diagonal, ember |
 | Size | Width (200 px up to the width of your screen), height (8 to 60 px) and target level |
 | Colors | 8 quick colors or the full color wheel, for the XP bar and the rested XP, plus background opacity |
-| Options | Bar enabled, lock the bar, hide the Blizzard bar, sound on XP gain, texts on the bar, rested text, smooth animation, floating +XP, minimap button, reputation bar, reputation on hover, reputation at max level, XP per hour, full screen width, XP of finished quests, announce updates, character profile |
-| Bottom row | Recenter the bar, copy the shared settings onto this character, share the ones you see, reset everything |
+| Options | Bar enabled, lock the bar, hide the Blizzard bar, sound on XP gain, texts on the bar, rested text, smooth animation, floating +XP, minimap button, reputation bar, reputation on hover, reputation at max level, XP per hour, full screen width, XP of finished quests, announce updates |
+| Bottom row | The language, the profile in use with its New and Delete buttons, then recenter the bar and reset everything |
 
 ## Installation
 
@@ -115,18 +116,19 @@ its settings:
 - **Addon CVars** — they stay in memory while the game runs, which covers a relog. The client never
   writes them to disk, so they are gone once the game is closed.
 - **One account macro named `MyXPBar`** — macros are stored by the server and are always there after
-  a restart. It holds a single line of settings (about 120 characters) and does nothing if you click
-  it. If you delete it, MyXPBar puts it back a few seconds later.
-- **One character macro named `MyXPBarChar`**, only on the characters that have their own profile —
-  the same single line, kept by that character. Characters on the shared settings get none.
+  a restart. It holds a single line of settings (about 130 characters) and does nothing if you click
+  it. If you delete it, MyXPBar puts it back a few seconds later. It carries the first profile, the
+  one a character gets until it picks another.
+- **One character macro named `MyXPBarChar`**, only on the characters that picked another profile —
+  the same single line, with the name of that profile, kept by that character.
 
 At login, the most recent copy wins. When Blizzard fixes the bug, the normal saved variables take
 over again — nothing to change. The macros use one of the 120 account slots and, for a character
 profile, one of that character's 18 slots; if they are all taken, a chat message tells you.
 
-One limit worth knowing while the bug lasts: after a full restart of the game, each character finds
-its own profile again when you log into it, but the profiles of the characters you have not logged
-into yet are not all in memory at once.
+One limit worth knowing while the bug lasts: after a full restart of the game, a character finds its
+profile again when you log into it, but the profiles nobody has logged into yet are not all in
+memory at once, so the list can be shorter than usual until you visit your characters.
 
 ## Compatibility
 
