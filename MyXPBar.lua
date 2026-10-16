@@ -66,9 +66,11 @@ ns.defaults = {
     fullWidth = false,   -- Stretch from one screen edge to the other (width is ignored)
     showRepHover = true, -- Mouse over the bar: tracked reputation
     showRepBar = false,  -- A thin reputation bar under the XP bar
+    repSide = false,     -- That bar beside the XP bar instead of under it
     showSession = true,  -- XP per hour and time left under the bar
     showQuestXP = false, -- XP of the finished quests waiting in the quest log
     maxLevelRep = false, -- At max level: the tracked reputation takes the bar
+    repOnly = false,     -- At any level: the tracked reputation takes the bar
     newsOnLogin = true,  -- One chat line when the addon was updated
     targetLevel = 0,     -- 0: next level
     point = { "CENTER", "CENTER", 0, -200 },
@@ -134,6 +136,7 @@ ns.BarEnabled = BarEnabled
 -- gaining XP on purpose.
 local function ShouldShowBar()
     if not BarEnabled() then return false end
+    if ns.db.repOnly then return false end -- The reputation has the bar
     if IsXPUserDisabled and IsXPUserDisabled() then return false end
     return not IsMaxLevel()
 end
@@ -181,9 +184,9 @@ local function UpdateBlizzardBar()
     local wantHidden
     if not ns.db.hideBlizzard then
         wantHidden = false
-    elseif not BarEnabled() then
-        -- The bar was switched off on purpose: the player wants no bar at
-        -- all, not the one of the game in its place
+    elseif not BarEnabled() or ns.db.repOnly then
+        -- The bar was switched off, or given to the reputation, on purpose:
+        -- the player wants no XP bar, not the one of the game in its place
         wantHidden = true
     else
         -- At max level there is no XP left to show, so the game gets its
@@ -311,32 +314,65 @@ sessionText:SetTextColor(0.65, 0.65, 0.7)
 -- =========================================================
 local WHITE = "Interface\\Buttons\\WHITE8x8"
 local SEGMENT_COUNT = 20
+local REP_SEGMENT_COUNT = 6
 
 -- Gold frame (style "gold")
-local goldBorder = CreateFrame("Frame", nil, mainFrame, "BackdropTemplate")
-goldBorder:SetPoint("TOPLEFT", -2, 2)
-goldBorder:SetPoint("BOTTOMRIGHT", 2, -2)
-goldBorder:SetBackdrop({ edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border", edgeSize = 12 })
-goldBorder:SetBackdropBorderColor(0.85, 0.68, 0.3, 1)
-goldBorder:Hide()
+-- The gold frame, the shine and the separators a style adds. The XP bar and
+-- the reputation bar each get their own set, so both wear the chosen style.
+-- around: the frame the gold border surrounds, bar: what is decorated.
+local function MakeStyleParts(around, bar, count)
+    local parts = { segments = {} }
 
--- Shine on the upper half (style "gold")
-local gloss = xpBar:CreateTexture(nil, "OVERLAY")
-gloss:SetTexture(WHITE)
-local okGloss = CreateColor and pcall(gloss.SetGradient, gloss, "VERTICAL",
-    CreateColor(1, 1, 1, 0), CreateColor(1, 1, 1, 0.18))
-if not okGloss then gloss:SetVertexColor(1, 1, 1, 0.08) end
-gloss:Hide()
+    parts.border = CreateFrame("Frame", nil, around, "BackdropTemplate")
+    parts.border:SetPoint("TOPLEFT", -2, 2)
+    parts.border:SetPoint("BOTTOMRIGHT", 2, -2)
+    parts.border:SetBackdrop({ edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border", edgeSize = 12 })
+    parts.border:SetBackdropBorderColor(0.85, 0.68, 0.3, 1)
+    parts.border:Hide()
 
--- Separators (style "segments")
-local segments = {}
-for i = 1, SEGMENT_COUNT - 1 do
-    local seg = xpBar:CreateTexture(nil, "OVERLAY")
-    seg:SetColorTexture(0, 0, 0, 0.8)
-    seg:SetWidth(2)
-    seg:Hide()
-    segments[i] = seg
+    -- Shine on the upper half (style "gold")
+    parts.gloss = bar:CreateTexture(nil, "OVERLAY")
+    parts.gloss:SetTexture(WHITE)
+    local ok = CreateColor and pcall(parts.gloss.SetGradient, parts.gloss, "VERTICAL",
+        CreateColor(1, 1, 1, 0), CreateColor(1, 1, 1, 0.18))
+    if not ok then parts.gloss:SetVertexColor(1, 1, 1, 0.08) end
+    parts.gloss:Hide()
+
+    -- Separators (style "segments")
+    for i = 1, count - 1 do
+        local seg = bar:CreateTexture(nil, "OVERLAY")
+        seg:SetColorTexture(0, 0, 0, 0.8)
+        seg:SetWidth(2)
+        seg:Hide()
+        parts.segments[i] = seg
+    end
+    return parts
 end
+
+-- width and height are the ones the bar ends up with on screen
+local function ApplyStyleParts(parts, style, bar, width, height)
+    parts.border:SetShown(style == "gold")
+    parts.gloss:SetShown(style == "gold")
+    if style == "gold" then
+        parts.gloss:ClearAllPoints()
+        parts.gloss:SetPoint("TOPLEFT", bar, "TOPLEFT")
+        parts.gloss:SetPoint("TOPRIGHT", bar, "TOPRIGHT")
+        parts.gloss:SetHeight(math.max(height / 2 - 2, 2))
+    end
+
+    local inner = (style == "gold") and (width - 4) or width
+    local count = #parts.segments + 1
+    for i, seg in ipairs(parts.segments) do
+        seg:SetShown(style == "segments")
+        if style == "segments" then
+            seg:ClearAllPoints()
+            seg:SetPoint("TOP", bar, "TOPLEFT", inner * i / count, 0)
+            seg:SetPoint("BOTTOM", bar, "BOTTOMLEFT", inner * i / count, 0)
+        end
+    end
+end
+
+local xpParts = MakeStyleParts(mainFrame, xpBar, SEGMENT_COUNT)
 
 -- Glowing edge (style "spark")
 local spark = mainFrame:CreateTexture(nil, "OVERLAY")
@@ -436,12 +472,20 @@ local repStripValue = repStrip:CreateFontString(nil, "OVERLAY", "GameFontNormalS
 repStripValue:SetPoint("RIGHT", -5, 0)
 repStripValue:SetTextColor(1, 1, 1)
 
+-- Fewer separators than the XP bar: beside it, the strip is a third as wide
+local repParts = MakeStyleParts(repStrip, repStrip, REP_SEGMENT_COUNT)
+
 -- Rested and session texts sit under whatever is lowest: the reputation strip,
 -- the rested strip or the bar. The strip appears later than the layout (once
 -- the faction data arrives), so this runs again every time it's updated.
+-- true while the reputation bar sits beside the XP bar instead of under it.
+-- ApplyLayout decides: the option is ignored when the bar already runs from
+-- one edge of the screen to the other.
+local repBeside = false
+
 local function AnchorBottomTexts()
     local below, gap = mainFrame, -5
-    if repStrip:IsShown() then
+    if repStrip:IsShown() and not repBeside then
         below, gap = repStrip, -3
     elseif underRested:IsShown() then
         below, gap = underRested, -3
@@ -510,11 +554,20 @@ local function UpdateRepStrip()
 
     local label = _G["FACTION_STANDING_LABEL" .. tostring(standing)] or ""
     local tall = repStrip:GetHeight() >= 12
-    repStripName:SetShown(tall)
+    -- Beside the bar it is too narrow for the faction name. Asking the frame
+    -- for its width would answer with the one it had before the re-anchoring.
+    local wide = not repBeside
+    repStripName:SetShown(tall and wide)
     repStripValue:SetShown(tall)
     if tall then
-        repStripName:SetText(name)
-        repStripValue:SetText(string.format("%s  %.1f%%", label, current / max * 100))
+        local pct = current / max * 100
+        if wide then
+            repStripName:SetText(name)
+            repStripValue:SetText(string.format("%s  %.1f%%", label, pct))
+        else
+            -- Only the percentage fits: the colour already says the standing
+            repStripValue:SetText(string.format("%.1f%%", pct))
+        end
     end
     repStrip:Show()
     AnchorBottomTexts()
@@ -525,9 +578,10 @@ ns.UpdateRepStrip = UpdateRepStrip
 -- replaces the XP on the bar instead of the bar disappearing.
 RepOnly = function()
     if not BarEnabled() then return false end
-    if not ns.db.maxLevelRep then return false end
-    if ShouldShowBar() then return false end
-    if not IsMaxLevel() then return false end -- XP off by choice: nothing to show
+    if ShouldShowBar() then return false end -- There is XP to show
+    -- Asked for at any level, or only at max level. XP switched off in the
+    -- game itself is neither: the bar simply goes.
+    if not (ns.db.repOnly or (ns.db.maxLevelRep and IsMaxLevel())) then return false end
     return (GetWatchedReputation()) ~= nil
 end
 ns.RepOnly = RepOnly
@@ -540,7 +594,7 @@ local function SetRepOnly(on)
     underRested:SetShown(not on and ns.db.style == "restedbar")
     questBar:SetShown(not on and ns.db.showQuestXP)
     spark:SetShown(not on and ns.db.style == "spark")
-    for _, seg in ipairs(segments) do
+    for _, seg in ipairs(xpParts.segments) do
         seg:SetShown(not on and ns.db.style == "segments")
     end
     if on then
@@ -656,24 +710,7 @@ function ns.ApplyLayout()
     spark:SetVertexColor(math.min(c.r + 0.4, 1), math.min(c.g + 0.4, 1), math.min(c.b + 0.4, 1), 0.9)
 
     -- Style decorations
-    goldBorder:SetShown(style == "gold")
-    gloss:SetShown(style == "gold")
-    if style == "gold" then
-        gloss:ClearAllPoints()
-        gloss:SetPoint("TOPLEFT", xpBar, "TOPLEFT")
-        gloss:SetPoint("TOPRIGHT", xpBar, "TOPRIGHT")
-        gloss:SetHeight(math.max(db.height / 2 - 2, 2))
-    end
-
-    local barWidth = (style == "gold") and (width - 4) or width
-    for i, seg in ipairs(segments) do
-        seg:SetShown(style == "segments")
-        if style == "segments" then
-            seg:ClearAllPoints()
-            seg:SetPoint("TOP", xpBar, "TOPLEFT", barWidth * i / SEGMENT_COUNT, 0)
-            seg:SetPoint("BOTTOM", xpBar, "BOTTOMLEFT", barWidth * i / SEGMENT_COUNT, 0)
-        end
-    end
+    ApplyStyleParts(xpParts, style, xpBar, width, db.height)
 
     spark:SetShown(style == "spark")
     if style == "spark" then
@@ -684,12 +721,32 @@ function ns.ApplyLayout()
     restedBar:SetShown(style ~= "restedbar")
     underRested:SetShown(style == "restedbar")
 
-    -- Reputation strip: under the bar (and under the rested strip if any)
-    local above = (style == "restedbar") and underRested or mainFrame
+    -- Reputation strip: beside the bar, or under it (and under the rested
+    -- strip if any). Full width leaves no room on the side.
+    repBeside = (db.repSide and not db.fullWidth) and true or false
     repStrip:ClearAllPoints()
-    repStrip:SetHeight(math.max(8, math.floor(db.height * 0.4)))
-    repStrip:SetPoint("TOPLEFT", above, "BOTTOMLEFT", 0, -2)
-    repStrip:SetPoint("TOPRIGHT", above, "BOTTOMRIGHT", 0, -2)
+    local stripWidth, stripHeight
+    if repBeside then
+        -- The thin style is a line at the bottom: the strip follows it there
+        stripHeight = (style == "thin") and math.min(6, db.height) or db.height
+        stripWidth = math.max(60, math.floor(width * 0.3))
+        repStrip:SetHeight(stripHeight)
+        repStrip:SetWidth(stripWidth)
+        if style == "thin" then
+            repStrip:SetPoint("BOTTOMLEFT", mainFrame, "BOTTOMRIGHT", 4, 0)
+        else
+            repStrip:SetPoint("TOPLEFT", mainFrame, "TOPRIGHT", 4, 0)
+        end
+    else
+        local above = (style == "restedbar") and underRested or mainFrame
+        stripHeight = math.max(8, math.floor(db.height * 0.4))
+        stripWidth = width
+        repStrip:SetHeight(stripHeight)
+        repStrip:SetPoint("TOPLEFT", above, "BOTTOMLEFT", 0, -2)
+        repStrip:SetPoint("TOPRIGHT", above, "BOTTOMRIGHT", 0, -2)
+    end
+    -- The strip wears the chosen style too
+    ApplyStyleParts(repParts, style, repStrip, stripWidth, stripHeight)
     UpdateRepStrip()
 
     -- Reputation texts sit exactly where the XP texts are
@@ -1058,14 +1115,18 @@ local function UpdateStatus()
         mainFrame:SetScript("OnUpdate", nil)
         return
     end
-    if RepOnly() and not ns.previewing then
+    -- The options menu keeps the bar on screen so it can be styled where
+    -- there is no XP left to show. It must not override a switch the player
+    -- just flicked: "reputation only" applies at once, menu open or not.
+    local preview = ns.previewing and not ns.db.repOnly
+    if RepOnly() and not preview then
         SetRepOnly(true)
         mainFrame:Show()
         mainFrame:SetScript("OnUpdate", nil) -- Nothing to animate
         return
     end
     if repOnlyActive then SetRepOnly(false) end
-    if not ShouldShowBar() and not ns.previewing then
+    if not ShouldShowBar() and not preview then
         mainFrame:Hide()
         mainFrame:SetScript("OnUpdate", nil) -- Nothing to animate while hidden
         return -- Stop function execution here

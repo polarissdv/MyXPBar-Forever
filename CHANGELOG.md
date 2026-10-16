@@ -1,5 +1,23 @@
 # MyXPBar - Changelog
 
+## 3.8
+- **The reputation bar can sit beside the XP bar** instead of under it: the
+  new "Reputation beside the bar" option moves it to the right, at the same
+  height, so it costs no vertical space at all. Asked for by a player who
+  keeps the bar under his hotbars, where space is a premium. Ignored while
+  the bar runs the full width of the screen, since there is no room left.
+- **The reputation bar wears the chosen style**, like the XP bar: the gold
+  frame and its shine, the separators of the segmented style, and the thin
+  line, which it follows down to the bottom of the bar. The decorations of a
+  style are built once now and applied to both bars.
+- **New "Reputation only" option**: the bar shows your tracked faction
+  instead of the XP at any level, not only at max level. With no faction
+  tracked there is nothing to show, so the bar goes and the Blizzard one
+  stays hidden with it.
+- A switch flicked in the options now applies while the menu is open. The
+  menu keeps the bar on screen so it can be styled where there is no XP left
+  to show, and that was hiding what "Reputation only" did until you closed it.
+
 ## 3.7
 - **Profiles have names.** Create one from the bar you have in front of you,
   give it a name, and pick it again on any character: the list sits at the

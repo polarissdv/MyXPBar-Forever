@@ -302,6 +302,7 @@ local FLAG_FIELDS = {
     "showQuestXP", -- 2.9
     "enabled", "maxLevelRep", "newsOnLogin", -- 3.6
     "own", -- 3.6, dead since 3.7: profiles have names now
+    "repSide", "repOnly", -- 3.8
 }
 
 local function ColorToHex(c)
