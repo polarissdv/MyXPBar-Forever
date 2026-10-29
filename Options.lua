@@ -199,6 +199,12 @@ versionText:SetText("v" .. VERSION .. "  ·  Options")
 
 local closeButton = CreateFrame("Button", nil, panel, "UIPanelCloseButton")
 closeButton:SetPoint("TOPRIGHT", -6, -6)
+-- The header above spans the whole top of the panel, to drag it, at the very
+-- same frame level: which of the two got the click was up to the client, and
+-- on Classic Era it was the header. The cross gets a level of its own, and
+-- closes the panel itself rather than trusting what the template does.
+closeButton:SetFrameLevel(header:GetFrameLevel() + 10)
+closeButton:SetScript("OnClick", function() panel:Hide() end)
 
 -- Each column is a frame holding its own widgets, so the whole block can
 -- be moved in one go: side by side (horizontal) or stacked (vertical).
@@ -1297,6 +1303,7 @@ newsVersion:SetText("MyXPBar v" .. VERSION)
 
 local newsCloseX = CreateFrame("Button", nil, news, "UIPanelCloseButton")
 newsCloseX:SetPoint("TOPRIGHT", -6, -6)
+newsCloseX:SetScript("OnClick", function() news:Hide() end)
 
 local newsOrnament = Ornament(news, NEWS_W - 44)
 local newsTexts = {}

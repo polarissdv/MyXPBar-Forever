@@ -22,6 +22,32 @@ local ADDON_NAME, ns = ...
 local Persist = {}
 ns.Persist = Persist
 
+-- Classic Era (1.xx, interface 11xxx: Hardcore, Season of Discovery...) keeps
+-- its saved variables, so none of this is needed there - and creating macros
+-- in the player's slots for nothing is not acceptable. Only a build known to
+-- be Era skips it: on anything else the workaround stays on, which is the
+-- safe side of a wrong guess.
+local tocVersion = select(4, GetBuildInfo())
+if type(tocVersion) == "number" and tocVersion >= 11000 and tocVersion < 12000 then
+    function Persist.Register() end
+    function Persist.Replace() end
+
+    -- "Ready" means entering the world: the chat is there to be read
+    function Persist.OnReady(callback)
+        local frame = CreateFrame("Frame")
+        frame:RegisterEvent("PLAYER_ENTERING_WORLD")
+        frame:SetScript("OnEvent", function(self)
+            self:UnregisterAllEvents()
+            callback()
+        end)
+    end
+
+    function Persist.Debug(print)
+        print("Classic Era: the saved variables work, no backup copy is made.")
+    end
+    return
+end
+
 local CHUNK = 200      -- Characters per CVar
 local MAX_CHUNKS = 60  -- Up to 12 000 characters per saved table
 local SAVE_EVERY = 5   -- Seconds

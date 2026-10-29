@@ -1,8 +1,8 @@
-## Interface: 16001
+## Interface: 16001, 11509
 ## Title: MyXPBar
-## Notes: Lightweight XP Bar inspired by Luxthos - replaces the default Blizzard XP bar
+## Notes: Lightweight XP Bar inspired by Luxthos - replaces the default Blizzard XP bar (WoW Forever and Classic Era / Hardcore)
 ## Author: Polarz141
-## Version: 3.8
+## Version: 3.9
 ## SavedVariables: MyXPBarDB
 ## IconTexture: Interface\AddOns\MyXPBar\Media\icon
 ## AddonCompartmentFunc: MyXPBar_OnAddonCompartmentClick

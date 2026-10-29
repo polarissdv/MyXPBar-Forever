@@ -7,8 +7,9 @@
 **A clean, lightweight and fully customizable XP bar for World of Warcraft: Forever.**
 
 [![CurseForge](https://img.shields.io/badge/CurseForge-MyXPBar%20Forever-F16436?logo=curseforge&logoColor=white)](https://www.curseforge.com/wow/addons/myxpbar-forever)
-![Version](https://img.shields.io/badge/version-3.8-9966ff)
+![Version](https://img.shields.io/badge/version-3.9-9966ff)
 ![Interface](https://img.shields.io/badge/WoW%3A%20Forever-1.60.x%20(16001)-c8a14a)
+![Classic Era](https://img.shields.io/badge/Classic%20Era%20%2F%20Hardcore-1.15.9%20(11509)-c8a14a)
 [![Support](https://img.shields.io/badge/Support-TipeeeStream-ff7b00)](https://www.tipeeestream.com/polarzz88/)
 
 </div>
@@ -87,8 +88,9 @@ applied live.
 
 1. Download the latest release, or get it from
    [CurseForge](https://www.curseforge.com/wow/addons/myxpbar-forever).
-2. Extract the `MyXPBar` folder into your WoW Forever `Interface\AddOns` directory:
-   `World of Warcraft\<Forever folder>\Interface\AddOns\MyXPBar`
+2. Extract the `MyXPBar` folder into your `Interface\AddOns` directory:
+   `World of Warcraft\<Forever folder>\Interface\AddOns\MyXPBar` for WoW Forever, or
+   `World of Warcraft\_classic_era_\Interface\AddOns\MyXPBar` for Classic Era / Hardcore.
 3. Launch the game. The folder **must** be named `MyXPBar`.
 
 ## Controls
@@ -135,6 +137,8 @@ memory at once, so the list can be shorter than usual until you visit your chara
 ## Compatibility
 
 - **World of Warcraft: Forever** — 1.60.x, Interface `16001`
+- **Classic Era / Hardcore** — 1.15.9, Interface `11509`. The backup below is not needed there:
+  the game keeps its settings, and MyXPBar creates no macro.
 - The original 1.0 version was made for 3.3.5a / Project Ascension.
 
 ## Changelog

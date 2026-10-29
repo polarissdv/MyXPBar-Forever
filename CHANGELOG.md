@@ -1,5 +1,22 @@
 # MyXPBar - Changelog
 
+## 3.9
+- **MyXPBar now runs on Classic Era 1.15.9** - Hardcore realms, Season of
+  Discovery - as well as on WoW Forever. Same addon, same options, same
+  profiles, same files: one package, whose TOC lists both interfaces
+  (`16001, 11509`). Install it in `_classic_era_\Interface\AddOns` for
+  Classic Era.
+- **No backup copy on Classic Era.** The workaround for the Forever beta
+  saving bug is switched off there: the game keeps its saved variables, so
+  the addon creates no macro and no CVar, and takes none of your macro
+  slots. It only does so on a build it knows to be Classic Era (interface
+  11xxx); on any other it stays on, which is the safe side of a wrong guess.
+- **The close button of the options menu works on every client.** The strip
+  that lets you drag the menu spans its whole top at the very same frame
+  level as the cross, so on Classic Era it took the click. The cross has its
+  own level above the strip now, and closes the menu itself instead of
+  relying on the button template. Same for the What's new panel.
+
 ## 3.8
 - **The reputation bar can sit beside the XP bar** instead of under it: the
   new "Reputation beside the bar" option moves it to the right, at the same
