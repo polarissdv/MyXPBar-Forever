@@ -200,9 +200,9 @@ versionText:SetText("v" .. VERSION .. "  ·  Options")
 local closeButton = CreateFrame("Button", nil, panel, "UIPanelCloseButton")
 closeButton:SetPoint("TOPRIGHT", -6, -6)
 -- The header above spans the whole top of the panel, to drag it, at the very
--- same frame level: which of the two got the click was up to the client, and
--- on Classic Era it was the header. The cross gets a level of its own, and
--- closes the panel itself rather than trusting what the template does.
+-- same frame level: which of the two gets the click is up to the client. The
+-- cross gets a level of its own, and closes the panel itself rather than
+-- trusting what the template does.
 closeButton:SetFrameLevel(header:GetFrameLevel() + 10)
 closeButton:SetScript("OnClick", function() panel:Hide() end)
 
@@ -1260,7 +1260,7 @@ end
 -- =========================================================
 -- Shown once after an update, and on /mxp news. The lines are translated like
 -- everything else: one key per line, rewritten with each release.
-local NEWS_LINES = { "NEWS_1", "NEWS_2", "NEWS_3" }
+local NEWS_LINES = { "NEWS_1" }
 local NEWS_W = 420
 
 local news = CreateFrame("Frame", "MyXPBarNewsFrame", UIParent, "BackdropTemplate")
