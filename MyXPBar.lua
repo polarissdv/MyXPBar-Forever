@@ -1240,6 +1240,16 @@ function ns.ResetPosition()
     ns.Refresh()
 end
 
+function ns.CenterPosition(axis)
+    local barX, barY = mainFrame:GetCenter()
+    local screenX, screenY = UIParent:GetCenter()
+    if not barX or not screenX then return end
+    local x, y = barX - screenX, barY - screenY
+    if axis == "horizontal" then x = 0 else y = 0 end
+    ns.db.point = { "CENTER", "CENTER", x, y }
+    ns.Refresh()
+end
+
 -- =========================================================
 -- EVENTS
 -- =========================================================

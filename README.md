@@ -82,7 +82,7 @@ applied live.
 | Size | Width (200 px up to the width of your screen), height (8 to 60 px) and target level |
 | Colors | 8 quick colors or the full color wheel, for the XP bar and the rested XP, plus background opacity |
 | Options | Bar enabled, lock the bar, hide the Blizzard bar, sound on XP gain, texts on the bar, rested text, smooth animation, floating +XP, minimap button, reputation bar, reputation beside the bar, reputation on hover, reputation at max level, reputation only, XP per hour, full screen width, XP of finished quests, announce updates |
-| Bottom row | The language, the profile in use with its New and Delete buttons, then recenter the bar and reset everything |
+| Bottom row | The language, the profile in use with its New and Delete buttons, then recenter the bar, center it horizontally or vertically, and reset everything |
 
 ## Installation
 

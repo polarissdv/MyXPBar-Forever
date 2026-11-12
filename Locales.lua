@@ -84,6 +84,8 @@ local L = {
         REP_NONE = "No reputation tracked",
         REP_NONE_DESC = "In the Reputation panel, check \"Show as Experience Bar\" for a faction.",
         RESET_POSITION = "Recenter the bar",
+        CENTER_HORIZONTAL = "Center horizontally",
+        CENTER_VERTICAL = "Center vertically",
         RESET_ALL = "Reset everything",
         HINT = "Drag the bar to move it, unless it is locked.  ·  Command: /mxp",
 
@@ -208,6 +210,8 @@ local L = {
         REP_NONE = "Aucune réputation suivie",
         REP_NONE_DESC = "Dans le panneau Réputation, coche « Afficher dans la barre d'expérience » pour une faction.",
         RESET_POSITION = "Recentrer la barre",
+        CENTER_HORIZONTAL = "Centrer horizontalement",
+        CENTER_VERTICAL = "Centrer verticalement",
         RESET_ALL = "Tout réinitialiser",
         HINT = "Glisse la barre pour la déplacer, sauf si elle est verrouillée.  ·  Commande : /mxp",
 
@@ -330,6 +334,8 @@ local L = {
         REP_NONE = "Kein Ruf verfolgt",
         REP_NONE_DESC = "Aktiviere im Ruf-Fenster \"Als Erfahrungsleiste anzeigen\" für eine Fraktion.",
         RESET_POSITION = "Leiste zentrieren",
+        CENTER_HORIZONTAL = "Horizontal zentrieren",
+        CENTER_VERTICAL = "Vertikal zentrieren",
         RESET_ALL = "Alles zurücksetzen",
         HINT = "Ziehe die Leiste, um sie zu verschieben, sofern sie nicht gesperrt ist.  ·  Befehl: /mxp",
 
@@ -452,6 +458,8 @@ local L = {
         REP_NONE = "Ninguna reputación seguida",
         REP_NONE_DESC = "En el panel de Reputación, marca \"Mostrar como barra de experiencia\" en una facción.",
         RESET_POSITION = "Centrar la barra",
+        CENTER_HORIZONTAL = "Centrar horizontalmente",
+        CENTER_VERTICAL = "Centrar verticalmente",
         RESET_ALL = "Restablecer todo",
         HINT = "Arrastra la barra para moverla, salvo si está bloqueada.  ·  Comando: /mxp",
 
@@ -574,6 +582,8 @@ local L = {
         REP_NONE = "Nenhuma reputação acompanhada",
         REP_NONE_DESC = "No painel de Reputação, marque \"Mostrar como barra de experiência\" em uma facção.",
         RESET_POSITION = "Centralizar a barra",
+        CENTER_HORIZONTAL = "Centralizar horizontalmente",
+        CENTER_VERTICAL = "Centralizar verticalmente",
         RESET_ALL = "Redefinir tudo",
         HINT = "Arraste a barra para movê-la, a menos que esteja travada.  ·  Comando: /mxp",
 
@@ -696,6 +706,8 @@ local L = {
         REP_NONE = "Репутация не отслеживается",
         REP_NONE_DESC = "В окне репутации отметь у фракции \"Показывать на полосе опыта\".",
         RESET_POSITION = "Вернуть полосу в центр",
+        CENTER_HORIZONTAL = "По центру горизонтально",
+        CENTER_VERTICAL = "По центру вертикально",
         RESET_ALL = "Сбросить всё",
         HINT = "Тяни полосу мышью, чтобы её передвинуть, если она не закреплена.  ·  Команда: /mxp",
 
@@ -818,6 +830,8 @@ local L = {
         REP_NONE = "Nessuna reputazione seguita",
         REP_NONE_DESC = "Nel pannello Reputazione, spunta \"Mostra come barra dell'esperienza\" per una fazione.",
         RESET_POSITION = "Centra la barra",
+        CENTER_HORIZONTAL = "Centra orizzontalmente",
+        CENTER_VERTICAL = "Centra verticalmente",
         RESET_ALL = "Reimposta tutto",
         HINT = "Trascina la barra per spostarla, a meno che non sia bloccata.  ·  Comando: /mxp",
 
