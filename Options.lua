@@ -1163,6 +1163,12 @@ local BUTTON_GAP = 8
 local resetPosBtn = CreateButton(footer, "RESET_POSITION", 100, 26, function()
     ns.ResetPosition()
 end)
+local centerHorizontalBtn = CreateButton(footer, "CENTER_HORIZONTAL", 100, 26, function()
+    ns.CenterPosition("horizontal")
+end)
+local centerVerticalBtn = CreateButton(footer, "CENTER_VERTICAL", 100, 26, function()
+    ns.CenterPosition("vertical")
+end)
 
 local resetAllBtn = CreateButton(footer, "RESET_ALL", 100, 26, function()
     -- Only the profile in use: the other profiles and the language stay
@@ -1175,7 +1181,7 @@ local resetAllBtn = CreateButton(footer, "RESET_ALL", 100, 26, function()
     ns.RefreshOptions()
 end)
 local footerButtons = { resetPosBtn, resetAllBtn }
-cursorY = cursorY - 36
+cursorY = cursorY - 70
 
 local hint = footer:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
 hint:SetPoint("TOP", footer, "TOP", 0, cursorY)
@@ -1223,6 +1229,13 @@ function ns.LayoutOptions()
         button:ClearAllPoints()
         button:SetPoint("TOPLEFT", footer, "TOPLEFT", (i - 1) * (buttonWidth + BUTTON_GAP), BUTTON_Y)
     end
+    local centerWidth = (buttonWidth - BUTTON_GAP) / 2
+    centerHorizontalBtn:SetWidth(centerWidth)
+    centerVerticalBtn:SetWidth(centerWidth)
+    centerHorizontalBtn:ClearAllPoints()
+    centerVerticalBtn:ClearAllPoints()
+    centerHorizontalBtn:SetPoint("TOPLEFT", resetPosBtn, "BOTTOMLEFT", 0, -BUTTON_GAP)
+    centerVerticalBtn:SetPoint("TOPLEFT", centerHorizontalBtn, "TOPRIGHT", BUTTON_GAP, 0)
 
     panel:SetSize(PAD * 2 + FULL_W,
         -CONTENT_TOP + contentHeight + GAP + footer:GetHeight() + 16)
