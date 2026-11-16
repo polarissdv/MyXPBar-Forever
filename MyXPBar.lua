@@ -30,6 +30,25 @@ for _, entry in ipairs(ns.TEXTURES) do
 end
 
 -- The entry of a texture id, or the game's own one
+-- Fonts of the game itself: no file to ship, and they exist in every client.
+-- "default" is the one each text came with (Friz Quadrata through the
+-- Blizzard templates), which is why it has no file of its own.
+ns.FONTS = {
+    { id = "default", key = "FONT_DEFAULT" },
+    { id = "arial", key = "FONT_ARIAL", file = "Fonts\\ARIALN.TTF" },
+    { id = "morpheus", key = "FONT_MORPHEUS", file = "Fonts\\MORPHEUS.TTF" },
+    { id = "skurri", key = "FONT_SKURRI", file = "Fonts\\skurri.ttf" },
+}
+
+function ns.FontFile(id)
+    -- Only Arial Narrow is sure to have the letters of every language
+    if not ns.UsesLatinFont() then return "Fonts\\ARIALN.TTF" end
+    for _, entry in ipairs(ns.FONTS) do
+        if entry.id == id then return entry.file end
+    end
+    return nil
+end
+
 function ns.TextureEntry(id)
     for _, entry in ipairs(ns.TEXTURES) do
         if entry.id == id then return entry end
@@ -67,6 +86,7 @@ ns.defaults = {
     showGains = true,  -- Floating "+245 XP"
     style = "classic", -- classic | gold | segments | thin | spark | restedbar
     texture = "default", -- Bar texture, see ns.TEXTURES
+    font = "default",    -- Font of every text of the bar, see ns.FONTS
     fullWidth = false,   -- Stretch from one screen edge to the other (width is ignored)
     showRepHover = true, -- Mouse over the bar: tracked reputation
     showRepBar = false,  -- A thin reputation bar under the XP bar
@@ -503,8 +523,9 @@ end
 
 local function ApplyTextScale()
     local scale = ns.db.textScale or 1
+    local file = ns.FontFile(ns.db.font)
     for _, e in ipairs(scaledTexts) do
-        pcall(e.fs.SetFont, e.fs, e.path, math.max(6, e.size * scale), e.flags)
+        pcall(e.fs.SetFont, e.fs, file or e.path, math.max(6, e.size * scale), e.flags)
     end
 end
 

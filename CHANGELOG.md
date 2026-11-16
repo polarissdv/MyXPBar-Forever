@@ -1,5 +1,11 @@
 # MyXPBar - Changelog
 
+## 4.1
+- **The font of the bar is yours.** Four fonts of the game, in the new FONT
+  section: the default one, Arial Narrow, Morpheus and Skurri, each button
+  written in the font it picks. Nothing to download, they are in every
+  client. Asked for by Dream777.
+
 ## 4.0
 - **Center the bar on one axis.** Two buttons under "Recenter the bar"
   center it horizontally or vertically and leave the other axis exactly

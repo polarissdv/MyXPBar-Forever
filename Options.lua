@@ -781,6 +781,29 @@ tinsert(refreshers, function()
     end
 end)
 
+-- Font of the texts of the bar: one button per font, each written in the
+-- font it picks. Four of the game's own, so there is no file to ship.
+Section("SECTION_FONT")
+local fontButtons = {}
+for i, entry in ipairs(ns.FONTS) do
+    local b = CreateButton(content, entry.key, CONTENT_W / 2 - 6, 24, function()
+        ns.db.font = entry.id
+        ns.Refresh()
+        ns.RefreshOptions()
+    end)
+    b:SetPoint("TOPLEFT", ((i - 1) % 2) * (CONTENT_W / 2), cursorY - math.floor((i - 1) / 2) * 28)
+    local fs = b.Text or b.text or b:GetFontString()
+    if fs and entry.file then pcall(fs.SetFont, fs, entry.file, 13, "") end
+    b.id = entry.id
+    fontButtons[i] = b
+end
+cursorY = cursorY - 28 * math.ceil(#ns.FONTS / 2) - 6
+tinsert(refreshers, function()
+    for _, b in ipairs(fontButtons) do
+        if b.id == ns.db.font then b:LockHighlight() else b:UnlockHighlight() end
+    end
+end)
+
 Section("SECTION_SIZE")
 -- Up to the width of the screen (in UI units, so it matches any resolution and UI scale)
 CreateSlider("WIDTH", 200, function() return math.max(1400, math.floor(UIParent:GetWidth() / 10 + 0.5) * 10) end, 10,
@@ -1284,7 +1307,7 @@ end
 -- =========================================================
 -- Shown once after an update, and on /mxp news. The lines are translated like
 -- everything else: one key per line, rewritten with each release.
-local NEWS_LINES = { "NEWS_1", "NEWS_2", "NEWS_3" }
+local NEWS_LINES = { "NEWS_1" }
 local NEWS_W = 420
 
 local news = CreateFrame("Frame", "MyXPBarNewsFrame", UIParent, "BackdropTemplate")

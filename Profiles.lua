@@ -357,6 +357,7 @@ local function EncodeSettings(s, savedAt, language, seen, profileName)
         EncodeName(profileName), -- 3.7, appended
         string.format("%d", math.floor((s.textScale or 1) * 100 + 0.5)), -- 4.0
         ColorToHex(s.repColor or { r = 0, g = 0, b = 0 }),               -- 4.0
+        s.font or "default",                                             -- 4.1
     }, ";")
 end
 
@@ -395,6 +396,7 @@ local function DecodeSettings(data)
         -- 4.0, nil in older copies: the defaults apply
         textScale = tonumber(f[20]) and math.min(math.max(tonumber(f[20]) / 100, 0.5), 2) or nil,
         repColor = f[21] and HexToColor(f[21]) or nil,
+        font = f[22] and f[22]:match("^%a+$") or nil, -- 4.1
     }
     for i, key in ipairs(FLAG_FIELDS) do
         local bit = f[13]:sub(i, i)
