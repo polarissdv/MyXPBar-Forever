@@ -1,5 +1,11 @@
 # MyXPBar - Changelog
 
+## 4.2
+- **A bold font for the bar.** The four fonts of 4.1 are all on the thin
+  side: the new "Bold" one is thick and outlined, so the texts of a small
+  bar stand out over whatever is behind them. A client without that font
+  file keeps the text as it was instead of losing it.
+
 ## 4.1
 - **The font of the bar is yours.** Four fonts of the game, in the new FONT
   section: the default one, Arial Narrow, Morpheus and Skurri, each button

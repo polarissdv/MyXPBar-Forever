@@ -793,7 +793,7 @@ for i, entry in ipairs(ns.FONTS) do
     end)
     b:SetPoint("TOPLEFT", ((i - 1) % 2) * (CONTENT_W / 2), cursorY - math.floor((i - 1) / 2) * 28)
     local fs = b.Text or b.text or b:GetFontString()
-    if fs and entry.file then pcall(fs.SetFont, fs, entry.file, 13, "") end
+    if fs and entry.file then pcall(fs.SetFont, fs, entry.file, 13, entry.flags or "") end
     b.id = entry.id
     fontButtons[i] = b
 end
