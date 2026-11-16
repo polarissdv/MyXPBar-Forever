@@ -1,22 +1,14 @@
 # MyXPBar - Changelog
 
-## 4.3
-- **4.2 did not load at all.** A quote left unescaped in the line announcing
-  the bold font broke the file holding every translation, and with it the
-  bar, the options menu and the rest of the addon. The line is fixed and
-  the quotes are gone from it. Install 4.3 over 4.2, nothing was lost.
-
-## 4.2
-- **A bold font for the bar.** The four fonts of 4.1 are all on the thin
-  side: the new "Bold" one is thick and outlined, so the texts of a small
-  bar stand out over whatever is behind them. A client without that font
-  file keeps the text as it was instead of losing it.
-
 ## 4.1
-- **The font of the bar is yours.** Four fonts of the game, in the new FONT
-  section: the default one, Arial Narrow, Morpheus and Skurri, each button
-  written in the font it picks. Nothing to download, they are in every
-  client. Asked for by Dream777.
+- **The font of the bar is yours.** Five fonts of the game in the new FONT
+  section: the default one, Bold, Arial Narrow, Morpheus and Skurri, each
+  button written in the font it picks. Nothing to download, they are in
+  every client, and a client missing one keeps the text it had. Bold is
+  thick and outlined, so the texts of a small bar stand out over whatever
+  is behind them. Asked for by Dream777.
+- The What's new panel lists everything 4.0 and 4.1 brought, for the
+  players coming from 3.9.
 
 ## 4.0
 - **Center the bar on one axis.** Two buttons under "Recenter the bar"
