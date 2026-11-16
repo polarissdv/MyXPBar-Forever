@@ -1,5 +1,11 @@
 # MyXPBar - Changelog
 
+## 4.3
+- **4.2 did not load at all.** A quote left unescaped in the line announcing
+  the bold font broke the file holding every translation, and with it the
+  bar, the options menu and the rest of the addon. The line is fixed and
+  the quotes are gone from it. Install 4.3 over 4.2, nothing was lost.
+
 ## 4.2
 - **A bold font for the bar.** The four fonts of 4.1 are all on the thin
   side: the new "Bold" one is thick and outlined, so the texts of a small
