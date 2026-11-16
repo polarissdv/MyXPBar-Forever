@@ -1,5 +1,21 @@
 # MyXPBar - Changelog
 
+## 4.0
+- **Center the bar on one axis.** Two buttons under "Recenter the bar"
+  center it horizontally or vertically and leave the other axis exactly
+  where you put it: the bar under the minimap keeps its height and lands in
+  the middle of the screen, or the other way round. Written and sent in by
+  aformagin.
+- **The texts of the bar are yours.** A size from 70 to 150 % for every text
+  of the bar, and a switch for each one of the three: the level on the left,
+  the XP numbers in the middle, the percentage on the right. A small bar
+  under the minimap no longer has to choose between a wall of text and no
+  text at all. Asked for by Tinter.
+- **A colour of its own for the reputation bar**, instead of the colour of
+  the standing: the new "Own reputation color" option, with the colour
+  picked in the Colors section. The reputation bar beside a purple XP bar
+  is told apart at a glance now.
+
 ## 3.9
 - **The close button of the options menu works on every client.** The strip
   that lets you drag the menu spans its whole top at the very same frame

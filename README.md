@@ -7,7 +7,7 @@
 **A clean, lightweight and fully customizable XP bar for World of Warcraft: Forever.**
 
 [![CurseForge](https://img.shields.io/badge/CurseForge-MyXPBar%20Forever-F16436?logo=curseforge&logoColor=white)](https://www.curseforge.com/wow/addons/myxpbar-forever)
-![Version](https://img.shields.io/badge/version-3.9-9966ff)
+![Version](https://img.shields.io/badge/version-4.0-9966ff)
 ![Interface](https://img.shields.io/badge/WoW%3A%20Forever-1.60.x%20(16001)-c8a14a)
 [![Support](https://img.shields.io/badge/Support-TipeeeStream-ff7b00)](https://www.tipeeestream.com/polarzz88/)
 
@@ -78,9 +78,9 @@ applied live.
 | --- | --- |
 | Style | Classic, gold framed, segmented, thin line, spark, split rested |
 | Texture | Default, glaze, satin, minimal, glass, bevel, tube, brushed, linen, diagonal, ember |
-| Size | Width (200 px up to the width of your screen), height (8 to 60 px) and target level |
-| Colors | 8 quick colors or the full color wheel, for the XP bar and the rested XP, plus background opacity |
-| Options | Bar enabled, lock the bar, hide the Blizzard bar, sound on XP gain, texts on the bar, rested text, smooth animation, floating +XP, minimap button, reputation bar, reputation beside the bar, reputation on hover, reputation at max level, reputation only, XP per hour, full screen width, XP of finished quests, announce updates |
+| Size | Width (200 px up to the width of your screen), height (8 to 60 px), text size (70 to 150 %) and target level |
+| Colors | 8 quick colors or the full color wheel, for the XP bar, the rested XP and the reputation bar, plus background opacity |
+| Options | Bar enabled, lock the bar, hide the Blizzard bar, sound on XP gain, texts on the bar (level, XP numbers, percentage), rested text, smooth animation, floating +XP, minimap button, reputation bar, reputation beside the bar, reputation on hover, own reputation color, reputation at max level, reputation only, XP per hour, full screen width, XP of finished quests, announce updates |
 | Bottom row | The language, the profile in use with its New and Delete buttons, then recenter the bar, center it horizontally or vertically, and reset everything |
 
 ## Installation

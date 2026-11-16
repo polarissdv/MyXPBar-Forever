@@ -792,6 +792,12 @@ CreateSlider("HEIGHT", 8, 60, 1,
     function(v) ns.db.height = v; ns.Refresh(); RefreshPreview() end,
     function(v) return v .. " px" end)
 
+-- The size every text of the bar is multiplied by, kept as a percentage
+CreateSlider("TEXT_SIZE", 70, 150, 5,
+    function() return math.floor((ns.db.textScale or 1) * 100 + 0.5) end,
+    function(v) ns.db.textScale = v / 100; ns.Refresh() end,
+    function(v) return v .. " %" end)
+
 -- 0: the next level. Anything above is an estimate (see SessionLine)
 CreateSlider("TARGET_LEVEL", 0, 60, 1,
     function() return ns.db.targetLevel or 0 end,
@@ -802,6 +808,7 @@ StartColumn(2)
 Section("SECTION_COLORS")
 CreateColorRow("XP_COLOR", "xpColor")
 CreateColorRow("RESTED_COLOR", "restedColor")
+CreateColorRow("REP_COLOR", "repColor")
 CreateSlider("BG_OPACITY", 0, 100, 5,
     function() return math.floor(ns.db.bgAlpha * 100 + 0.5) end,
     function(v) ns.db.bgAlpha = v / 100; ns.Refresh(); RefreshPreview() end,
@@ -814,6 +821,9 @@ OptionCheck("LOCK", "LOCK_DESC", "locked")
 OptionCheck("HIDE_BLIZZARD", "HIDE_BLIZZARD_DESC", "hideBlizzard")
 OptionCheck("SOUND", nil, "playSound")
 OptionCheck("SHOW_TEXT", "SHOW_TEXT_DESC", "showText")
+OptionCheck("SHOW_LEVEL_TEXT", "SHOW_LEVEL_TEXT_DESC", "showLevelText")
+OptionCheck("SHOW_VALUE_TEXT", "SHOW_VALUE_TEXT_DESC", "showValueText")
+OptionCheck("SHOW_PCT_TEXT", "SHOW_PCT_TEXT_DESC", "showPctText")
 OptionCheck("SHOW_RESTED", "SHOW_RESTED_DESC", "showRestedText")
 OptionCheck("SMOOTH", "SMOOTH_DESC", "smooth")
 OptionCheck("SHOW_GAINS", "SHOW_GAINS_DESC", "showGains")
@@ -821,6 +831,7 @@ OptionCheck("MINIMAP", "MINIMAP_DESC", "showMinimap", function() ns.UpdateMinima
 OptionCheck("REP_BAR", "REP_BAR_DESC", "showRepBar")
 OptionCheck("REP_SIDE", "REP_SIDE_DESC", "repSide")
 OptionCheck("REP_HOVER", "REP_HOVER_DESC", "showRepHover")
+OptionCheck("REP_OWN_COLOR", "REP_OWN_COLOR_DESC", "repOwnColor")
 OptionCheck("MAX_LEVEL_REP", "MAX_LEVEL_REP_DESC", "maxLevelRep")
 OptionCheck("REP_ONLY", "REP_ONLY_DESC", "repOnly")
 OptionCheck("SHOW_SESSION", "SHOW_SESSION_DESC", "showSession")
@@ -1273,7 +1284,7 @@ end
 -- =========================================================
 -- Shown once after an update, and on /mxp news. The lines are translated like
 -- everything else: one key per line, rewritten with each release.
-local NEWS_LINES = { "NEWS_1" }
+local NEWS_LINES = { "NEWS_1", "NEWS_2", "NEWS_3" }
 local NEWS_W = 420
 
 local news = CreateFrame("Frame", "MyXPBarNewsFrame", UIParent, "BackdropTemplate")

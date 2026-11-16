@@ -303,6 +303,7 @@ local FLAG_FIELDS = {
     "enabled", "maxLevelRep", "newsOnLogin", -- 3.6
     "own", -- 3.6, dead since 3.7: profiles have names now
     "repSide", "repOnly", -- 3.8
+    "showLevelText", "showValueText", "showPctText", "repOwnColor", -- 4.0
 }
 
 local function ColorToHex(c)
@@ -354,6 +355,8 @@ local function EncodeSettings(s, savedAt, language, seen, profileName)
         -- which would otherwise become a field of its own.
         ((seen or ""):gsub("[^%w%.]", "")),
         EncodeName(profileName), -- 3.7, appended
+        string.format("%d", math.floor((s.textScale or 1) * 100 + 0.5)), -- 4.0
+        ColorToHex(s.repColor or { r = 0, g = 0, b = 0 }),               -- 4.0
     }, ";")
 end
 
@@ -389,6 +392,9 @@ local function DecodeSettings(data)
         texture = f[17] and f[17]:match("^%a+$") or nil,
         seenVersion = f[18] and f[18] ~= "" and f[18] or nil, -- 3.6
         profileName = Profiles.CleanName(DecodeName(f[19])),  -- 3.7
+        -- 4.0, nil in older copies: the defaults apply
+        textScale = tonumber(f[20]) and math.min(math.max(tonumber(f[20]) / 100, 0.5), 2) or nil,
+        repColor = f[21] and HexToColor(f[21]) or nil,
     }
     for i, key in ipairs(FLAG_FIELDS) do
         local bit = f[13]:sub(i, i)

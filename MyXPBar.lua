@@ -58,6 +58,10 @@ ns.defaults = {
     playSound = true,
     locked = false,
     showText = true,
+    showLevelText = true,  -- The level, on the left of the bar
+    showValueText = true,  -- The XP numbers, in the middle
+    showPctText = true,    -- The percentage, on the right
+    textScale = 1,         -- Size of every text of the bar (0.7 to 1.5)
     showRestedText = true,
     smooth = true,     -- Animated bar fill
     showGains = true,  -- Floating "+245 XP"
@@ -67,6 +71,8 @@ ns.defaults = {
     showRepHover = true, -- Mouse over the bar: tracked reputation
     showRepBar = false,  -- A thin reputation bar under the XP bar
     repSide = false,     -- That bar beside the XP bar instead of under it
+    repOwnColor = false, -- The reputation bar wears repColor, not the faction colour
+    repColor = { r = 0.2, g = 0.9, b = 0.9 }, -- CYAN
     showSession = true,  -- XP per hour and time left under the bar
     showQuestXP = false, -- XP of the finished quests waiting in the quest log
     maxLevelRep = false, -- At max level: the tracked reputation takes the bar
@@ -437,6 +443,19 @@ local function GetWatchedReputation()
     return nil
 end
 
+-- The colour a reputation bar wears: the one of the standing, or the one
+-- the player chose. Asked for by a player whose faction colour was too
+-- close to the colour of his XP bar to tell the two bars apart.
+local function RepColor(standing)
+    if ns.db.repOwnColor then
+        local c = ns.db.repColor
+        return c.r, c.g, c.b
+    end
+    local color = FACTION_BAR_COLORS and FACTION_BAR_COLORS[standing]
+    if color then return color.r, color.g, color.b end
+    return 0, 0.6, 0.1
+end
+
 -- Returns false when no reputation is tracked
 local function UpdateRepBar()
     local name, standing, barMin, barMax, value = GetWatchedReputation()
@@ -446,12 +465,7 @@ local function UpdateRepBar()
     repBar:SetMinMaxValues(0, max)
     repBar:SetValue(current)
 
-    local color = FACTION_BAR_COLORS and FACTION_BAR_COLORS[standing]
-    if color then
-        repBar:SetStatusBarColor(color.r, color.g, color.b, 1)
-    else
-        repBar:SetStatusBarColor(0, 0.6, 0.1, 1)
-    end
+    repBar:SetStatusBarColor(RepColor(standing))
     repName:SetText(name)
     repValue:SetText(FormatNumber(current) .. " / " .. FormatNumber(max))
     local label = _G["FACTION_STANDING_LABEL" .. tostring(standing)] or ""
@@ -471,6 +485,28 @@ repStripName:SetTextColor(1, 1, 1)
 local repStripValue = repStrip:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
 repStripValue:SetPoint("RIGHT", -5, 0)
 repStripValue:SetTextColor(1, 1, 1)
+
+-- Every text of the bar, with the size its font came with: the "text size"
+-- option multiplies that size instead of replacing it, so each text keeps
+-- the look it was given (the small ones stay smaller).
+local scaledTexts = {}
+local function TrackFont(fs)
+    local path, size, flags = fs:GetFont()
+    if path and size then
+        tinsert(scaledTexts, { fs = fs, path = path, size = size, flags = flags })
+    end
+end
+for _, fs in ipairs({ levelText, valueText, pctText, subText, sessionText,
+    repName, repValue, repStanding, repStripName, repStripValue }) do
+    TrackFont(fs)
+end
+
+local function ApplyTextScale()
+    local scale = ns.db.textScale or 1
+    for _, e in ipairs(scaledTexts) do
+        pcall(e.fs.SetFont, e.fs, e.path, math.max(6, e.size * scale), e.flags)
+    end
+end
 
 -- Fewer separators than the XP bar: beside it, the strip is a third as wide
 local repParts = MakeStyleParts(repStrip, repStrip, REP_SEGMENT_COUNT)
@@ -502,9 +538,9 @@ local function AnchorBottomTexts()
 end
 
 local function SetXPTextsShown(show)
-    levelText:SetShown(show)
-    valueText:SetShown(show)
-    pctText:SetShown(show)
+    levelText:SetShown(show and ns.db.showLevelText)
+    valueText:SetShown(show and ns.db.showValueText)
+    pctText:SetShown(show and ns.db.showPctText)
 end
 
 -- true while the reputation stands in for the XP bar at max level
@@ -544,12 +580,7 @@ local function UpdateRepStrip()
     repStrip:SetMinMaxValues(0, max)
     repStrip:SetValue(current)
 
-    local color = FACTION_BAR_COLORS and FACTION_BAR_COLORS[standing]
-    if color then
-        repStrip:SetStatusBarColor(color.r, color.g, color.b, 1)
-    else
-        repStrip:SetStatusBarColor(0, 0.6, 0.1, 1)
-    end
+    repStrip:SetStatusBarColor(RepColor(standing))
     repStripBg:SetColorTexture(0, 0, 0, ns.db.bgAlpha)
 
     local label = _G["FACTION_STANDING_LABEL" .. tostring(standing)] or ""
@@ -757,6 +788,7 @@ function ns.ApplyLayout()
     repStanding:ClearAllPoints()
     repStanding:SetPoint(pctText:GetPoint())
 
+    ApplyTextScale()
     SetXPTextsShown(db.showText and not repBar:IsShown())
     subText:SetShown(db.showRestedText or db.showQuestXP)
     sessionText:SetShown(db.showSession)
