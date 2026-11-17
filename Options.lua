@@ -5,12 +5,15 @@ local T = ns.T
 -- STYLE (native WoW look)
 -- =========================================================
 local VERSION = ns.AddonVersion()
--- Two columns side by side: the menu stays short enough for any screen
+-- A list of pages on the left, the widgets of the chosen one on the right:
+-- the menu holds everything without running past the bottom of a screen.
 local PAD = 26
-local GUTTER = 26
-local CONTENT_W = 362                                  -- Width of one column
-local PANEL_WIDTH = PAD * 2 + CONTENT_W * 2 + GUTTER
-local CONTENT_TOP = -104                               -- Where a column starts
+local GUTTER = 22
+local SIDE_W = 152                                     -- The list of pages
+local CONTENT_W = 362                                  -- The page beside it
+local FULL_W = SIDE_W + GUTTER + CONTENT_W
+local PANEL_WIDTH = PAD * 2 + FULL_W
+local CONTENT_TOP = -104                               -- Where a page starts
 local WHITE = "Interface\\Buttons\\WHITE8x8"
 local CIRCLE_MASK = "Interface\\CHARACTERFRAME\\TempPortraitAlphaMask"
 local BAR_TEXTURE = "Interface\\TargetingFrame\\UI-StatusBar"
@@ -206,32 +209,32 @@ closeButton:SetPoint("TOPRIGHT", -6, -6)
 closeButton:SetFrameLevel(header:GetFrameLevel() + 10)
 closeButton:SetScript("OnClick", function() panel:Hide() end)
 
--- Each column is a frame holding its own widgets, so the whole block can
--- be moved in one go: side by side (horizontal) or stacked (vertical).
-local FULL_W = CONTENT_W * 2 + GUTTER
-
+-- A page is a frame holding its own widgets. They all sit at the same place
+-- and only the chosen one is shown, so the menu is as tall as its tallest
+-- page instead of as tall as everything it holds.
 local function MakeColumn(width)
     local column = CreateFrame("Frame", nil, panel)
     column:SetSize(width, 10)
     return column
 end
 
-local columnA = MakeColumn(CONTENT_W)
-local columnB = MakeColumn(CONTENT_W)
 local footer = MakeColumn(FULL_W)
+local pages = {}
 
 -- Widgets are created in "content", stacked downwards from cursorY
-local content = columnA
+local content
 local cursorY = 0
 
 local function FinishColumn()
     if content then content:SetHeight(math.max(-cursorY, 10)) end
 end
 
-local function StartColumn(index)
+-- Opens a page and adds it to the list on the left
+local function StartPage(key)
     FinishColumn()
-    content = (index == 1) and columnA or columnB
+    content = MakeColumn(CONTENT_W)
     cursorY = 0
+    tinsert(pages, { frame = content, key = key })
 end
 
 local function StartFooter()
@@ -239,6 +242,9 @@ local function StartFooter()
     content = footer
     cursorY = 0
 end
+
+-- The page on screen. Set once the list of pages is built.
+local currentPage = 1
 
 -- =========================================================
 -- WIDGETS
@@ -530,7 +536,7 @@ end
 -- =========================================================
 -- CONTENT
 -- =========================================================
-StartColumn(1)
+StartPage("PAGE_BAR")
 Section("SECTION_PREVIEW")
 local previewBox = CreateFrame("Frame", nil, content, "BackdropTemplate")
 previewBox:SetSize(CONTENT_W, 64)
@@ -783,6 +789,7 @@ end)
 
 -- Font of the texts of the bar: one button per font, each written in the
 -- font it picks. Four of the game's own, so there is no file to ship.
+StartPage("PAGE_TEXT")
 Section("SECTION_FONT")
 local fontButtons = {}
 for i, entry in ipairs(ns.FONTS) do
@@ -804,6 +811,24 @@ tinsert(refreshers, function()
     end
 end)
 
+Section("SECTION_TEXTS")
+-- The size every text of the bar is multiplied by, kept as a percentage
+CreateSlider("TEXT_SIZE", 70, 150, 5,
+    function() return math.floor((ns.db.textScale or 1) * 100 + 0.5) end,
+    function(v) ns.db.textScale = v / 100; ns.Refresh() end,
+    function(v) return v .. " %" end)
+
+EndChecks()
+OptionCheck("SHOW_TEXT", "SHOW_TEXT_DESC", "showText")
+OptionCheck("SHOW_LEVEL_TEXT", "SHOW_LEVEL_TEXT_DESC", "showLevelText")
+OptionCheck("SHOW_VALUE_TEXT", "SHOW_VALUE_TEXT_DESC", "showValueText")
+OptionCheck("SHOW_PCT_TEXT", "SHOW_PCT_TEXT_DESC", "showPctText")
+OptionCheck("SHOW_RESTED", "SHOW_RESTED_DESC", "showRestedText")
+OptionCheck("SHOW_SESSION", "SHOW_SESSION_DESC", "showSession")
+EndChecks()
+cursorY = cursorY - 10
+
+StartPage("PAGE_SIZE")
 Section("SECTION_SIZE")
 -- Up to the width of the screen (in UI units, so it matches any resolution and UI scale)
 CreateSlider("WIDTH", 200, function() return math.max(1400, math.floor(UIParent:GetWidth() / 10 + 0.5) * 10) end, 10,
@@ -815,54 +840,49 @@ CreateSlider("HEIGHT", 8, 60, 1,
     function(v) ns.db.height = v; ns.Refresh(); RefreshPreview() end,
     function(v) return v .. " px" end)
 
--- The size every text of the bar is multiplied by, kept as a percentage
-CreateSlider("TEXT_SIZE", 70, 150, 5,
-    function() return math.floor((ns.db.textScale or 1) * 100 + 0.5) end,
-    function(v) ns.db.textScale = v / 100; ns.Refresh() end,
-    function(v) return v .. " %" end)
-
 -- 0: the next level. Anything above is an estimate (see SessionLine)
 CreateSlider("TARGET_LEVEL", 0, 60, 1,
     function() return ns.db.targetLevel or 0 end,
     function(v) ns.db.targetLevel = v; ns.Refresh() end,
     function(v) return v == 0 and T("TARGET_NEXT") or (T("BAR_LEVEL") .. " " .. v) end)
 
-StartColumn(2)
 Section("SECTION_COLORS")
 CreateColorRow("XP_COLOR", "xpColor")
 CreateColorRow("RESTED_COLOR", "restedColor")
-CreateColorRow("REP_COLOR", "repColor")
 CreateSlider("BG_OPACITY", 0, 100, 5,
     function() return math.floor(ns.db.bgAlpha * 100 + 0.5) end,
     function(v) ns.db.bgAlpha = v / 100; ns.Refresh(); RefreshPreview() end,
     function(v) return v .. " %" end)
 
+StartPage("PAGE_OPTIONS")
 Section("SECTION_OPTIONS")
 EndChecks()
 OptionCheck("ENABLED", "ENABLED_DESC", "enabled")
 OptionCheck("LOCK", "LOCK_DESC", "locked")
 OptionCheck("HIDE_BLIZZARD", "HIDE_BLIZZARD_DESC", "hideBlizzard")
 OptionCheck("SOUND", nil, "playSound")
-OptionCheck("SHOW_TEXT", "SHOW_TEXT_DESC", "showText")
-OptionCheck("SHOW_LEVEL_TEXT", "SHOW_LEVEL_TEXT_DESC", "showLevelText")
-OptionCheck("SHOW_VALUE_TEXT", "SHOW_VALUE_TEXT_DESC", "showValueText")
-OptionCheck("SHOW_PCT_TEXT", "SHOW_PCT_TEXT_DESC", "showPctText")
-OptionCheck("SHOW_RESTED", "SHOW_RESTED_DESC", "showRestedText")
 OptionCheck("SMOOTH", "SMOOTH_DESC", "smooth")
 OptionCheck("SHOW_GAINS", "SHOW_GAINS_DESC", "showGains")
 OptionCheck("MINIMAP", "MINIMAP_DESC", "showMinimap", function() ns.UpdateMinimapButton() end)
-OptionCheck("REP_BAR", "REP_BAR_DESC", "showRepBar")
-OptionCheck("REP_SIDE", "REP_SIDE_DESC", "repSide")
-OptionCheck("REP_HOVER", "REP_HOVER_DESC", "showRepHover")
-OptionCheck("REP_OWN_COLOR", "REP_OWN_COLOR_DESC", "repOwnColor")
-OptionCheck("MAX_LEVEL_REP", "MAX_LEVEL_REP_DESC", "maxLevelRep")
-OptionCheck("REP_ONLY", "REP_ONLY_DESC", "repOnly")
-OptionCheck("SHOW_SESSION", "SHOW_SESSION_DESC", "showSession")
 OptionCheck("FULL_WIDTH", "FULL_WIDTH_DESC", "fullWidth")
 OptionCheck("QUEST_XP", "QUEST_XP_DESC", "showQuestXP")
 OptionCheck("NEWS_LOGIN", "NEWS_LOGIN_DESC", "newsOnLogin")
 EndChecks()
-cursorY = cursorY - 34
+cursorY = cursorY - 10
+
+StartPage("PAGE_REP")
+Section("SECTION_REPUTATION")
+EndChecks()
+OptionCheck("REP_BAR", "REP_BAR_DESC", "showRepBar")
+OptionCheck("REP_SIDE", "REP_SIDE_DESC", "repSide")
+OptionCheck("REP_HOVER", "REP_HOVER_DESC", "showRepHover")
+OptionCheck("MAX_LEVEL_REP", "MAX_LEVEL_REP_DESC", "maxLevelRep")
+OptionCheck("REP_ONLY", "REP_ONLY_DESC", "repOnly")
+OptionCheck("REP_OWN_COLOR", "REP_OWN_COLOR_DESC", "repOwnColor")
+EndChecks()
+cursorY = cursorY - 10
+CreateColorRow("REP_COLOR", "repColor")
+cursorY = cursorY - 10
 
 StartFooter()
 
@@ -1186,7 +1206,6 @@ end)
 cursorY = cursorY - 34
 
 -- Footer
-local FULL_W = CONTENT_W * 2 + GUTTER
 local footerOrnament = Ornament(footer, FULL_W)
 footerOrnament:SetPoint("TOP", footer, "TOP", 0, cursorY)
 cursorY = cursorY - 18
@@ -1237,21 +1256,89 @@ cursorY = cursorY - 26
 FinishColumn()
 
 -- =========================================================
--- LAYOUT: the two columns, side by side
+-- THE LIST OF PAGES, DOWN THE LEFT SIDE
 -- =========================================================
--- They used to be stackable, one column under the other. That menu was
--- around 1240 units tall where a screen offers 768: its lower half, the
--- buttons included, was simply out of reach. Two columns it is.
-local GAP = 14 -- Between the columns and the footer
+-- Two columns of widgets used to sit side by side, and every release made
+-- the menu wider or taller. A page at a time keeps it the same size for
+-- good, and says what is where.
+local PAGE_ROW = 30
+
+local sidebar = CreateFrame("Frame", nil, panel, "BackdropTemplate")
+sidebar:SetSize(SIDE_W, 16 + #pages * PAGE_ROW)
+sidebar:SetBackdrop(BOX_BACKDROP)
+sidebar:SetBackdropColor(0, 0, 0, 0.4)
+sidebar:SetBackdropBorderColor(GOLD[1], GOLD[2], GOLD[3], 0.3)
+
+local function ShowPage(index)
+    currentPage = index
+    for i, page in ipairs(pages) do
+        local on = (i == index)
+        page.frame:SetShown(on)
+        page.button.mark:SetShown(on)
+        page.button.glow:SetAlpha(on and 0.22 or 0)
+        page.button.text:SetTextColor(on and GOLD[1] or 0.85, on and GOLD[2] or 0.85,
+            on and GOLD[3] or 0.85)
+    end
+end
+
+for i, page in ipairs(pages) do
+    local b = CreateFrame("Button", nil, sidebar)
+    b:SetSize(SIDE_W - 16, PAGE_ROW - 4)
+    b:SetPoint("TOPLEFT", 8, -8 - (i - 1) * PAGE_ROW)
+
+    b.glow = b:CreateTexture(nil, "BACKGROUND")
+    b.glow:SetAllPoints()
+    b.glow:SetColorTexture(GOLD[1], GOLD[2], GOLD[3])
+    b.glow:SetAlpha(0)
+
+    -- The gold bar on the left of the page you are on
+    b.mark = b:CreateTexture(nil, "ARTWORK")
+    b.mark:SetColorTexture(GOLD[1], GOLD[2], GOLD[3])
+    b.mark:SetWidth(3)
+    b.mark:SetPoint("TOPLEFT", 0, -2)
+    b.mark:SetPoint("BOTTOMLEFT", 0, 2)
+    b.mark:Hide()
+
+    b.text = b:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    b.text:SetPoint("LEFT", 12, 0)
+    b.text:SetJustifyH("LEFT")
+    b.text:SetWidth(SIDE_W - 32)
+    Localize(b.text, page.key)
+
+    b:SetScript("OnEnter", function(self)
+        if currentPage ~= i then self.glow:SetAlpha(0.12) end
+    end)
+    b:SetScript("OnLeave", function(self)
+        if currentPage ~= i then self.glow:SetAlpha(0) end
+    end)
+    b:SetScript("OnClick", function()
+        if currentPage == i then return end
+        PlayUISound("IG_MAINMENU_OPTION_CHECKBOX_ON")
+        ShowPage(i)
+    end)
+    page.button = b
+end
+
+-- =========================================================
+-- LAYOUT: the list on the left, the chosen page on the right
+-- =========================================================
+local GAP = 14 -- Between the pages and the footer
 
 function ns.LayoutOptions()
-    columnA:ClearAllPoints()
-    columnB:ClearAllPoints()
     footer:ClearAllPoints()
-    columnA:SetPoint("TOPLEFT", panel, "TOPLEFT", PAD, CONTENT_TOP)
-    columnB:SetPoint("TOPLEFT", panel, "TOPLEFT", PAD + CONTENT_W + GUTTER, CONTENT_TOP)
+    sidebar:ClearAllPoints()
+    sidebar:SetPoint("TOPLEFT", panel, "TOPLEFT", PAD, CONTENT_TOP)
 
-    local contentHeight = math.max(columnA:GetHeight(), columnB:GetHeight())
+    local tallest = 0
+    for _, page in ipairs(pages) do
+        page.frame:ClearAllPoints()
+        page.frame:SetPoint("TOPLEFT", panel, "TOPLEFT", PAD + SIDE_W + GUTTER, CONTENT_TOP)
+        tallest = math.max(tallest, page.frame:GetHeight())
+    end
+    ShowPage(currentPage)
+
+    -- The menu is as tall as its tallest page: changing page moves nothing
+    local contentHeight = math.max(tallest, sidebar:GetHeight())
     footer:SetWidth(FULL_W)
     footer:SetPoint("TOPLEFT", panel, "TOPLEFT", PAD, CONTENT_TOP - contentHeight - GAP)
 
@@ -1271,7 +1358,7 @@ function ns.LayoutOptions()
     centerHorizontalBtn:SetPoint("TOPLEFT", resetPosBtn, "BOTTOMLEFT", 0, -BUTTON_GAP)
     centerVerticalBtn:SetPoint("TOPLEFT", centerHorizontalBtn, "TOPRIGHT", BUTTON_GAP, 0)
 
-    panel:SetSize(PAD * 2 + FULL_W,
+    panel:SetSize(PANEL_WIDTH,
         -CONTENT_TOP + contentHeight + GAP + footer:GetHeight() + 16)
 end
 
@@ -1307,7 +1394,7 @@ end
 -- =========================================================
 -- Shown once after an update, and on /mxp news. The lines are translated like
 -- everything else: one key per line, rewritten with each release.
-local NEWS_LINES = { "NEWS_1", "NEWS_2", "NEWS_3", "NEWS_4", "NEWS_5" }
+local NEWS_LINES = { "NEWS_1", "NEWS_2", "NEWS_3", "NEWS_4", "NEWS_5", "NEWS_6" }
 local NEWS_W = 420
 
 local news = CreateFrame("Frame", "MyXPBarNewsFrame", UIParent, "BackdropTemplate")

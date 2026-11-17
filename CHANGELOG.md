@@ -1,5 +1,17 @@
 # MyXPBar - Changelog
 
+## 4.2
+- **A new options menu.** The two columns of widgets are gone: the settings
+  are sorted into five pages listed down the left side - the bar, the texts,
+  size and colours, the options, the reputation - and the menu shows one at
+  a time. It is a third narrower than before, as tall as its tallest page,
+  and it stays that size whatever is added later, instead of growing with
+  every release.
+- The reputation settings live together now, their colour included, and the
+  settings about the texts of the bar sit with the font and the text size.
+- Nothing about the bar itself changed: same styles, same textures, same
+  settings, same profiles.
+
 ## 4.1
 - **The font of the bar is yours.** Five fonts of the game in the new FONT
   section: the default one, Bold, Arial Narrow, Morpheus and Skurri, each
