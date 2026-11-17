@@ -7,54 +7,58 @@ local T = ns.T
 local VERSION = ns.AddonVersion()
 -- A list of pages on the left, the widgets of the chosen one on the right:
 -- the menu holds everything without running past the bottom of a screen.
-local PAD = 26
-local GUTTER = 22
-local SIDE_W = 152                                     -- The list of pages
+local PAD = 14
+local GUTTER = 12
+local CARD_PAD = 12                                    -- Inside a card
+local SIDE_W = 150                                     -- The list of pages
 local CONTENT_W = 362                                  -- The page beside it
-local FULL_W = SIDE_W + GUTTER + CONTENT_W
+local FULL_W = SIDE_W + GUTTER + CONTENT_W + CARD_PAD * 2
 local PANEL_WIDTH = PAD * 2 + FULL_W
-local CONTENT_TOP = -104                               -- Where a page starts
+local CONTENT_TOP = -52                                -- Where a page starts
 local WHITE = "Interface\\Buttons\\WHITE8x8"
 local CIRCLE_MASK = "Interface\\CHARACTERFRAME\\TempPortraitAlphaMask"
 local BAR_TEXTURE = "Interface\\TargetingFrame\\UI-StatusBar"
-local FONT_GOTHIC = "Fonts\\MORPHEUS.TTF"
+local FONT_UI = "Fonts\\FRIZQT__.TTF"
 local ICON = "Interface\\AddOns\\MyXPBar\\Media\\icon"
 local AUTHOR = "Made by Polarz141"
 
-local GOLD = { 1, 0.82, 0.35 }
+-- The accent of the menu. It used to be gold, with the parchment and the
+-- gothic letters of the game around it; the menu is flat and dark now, and
+-- the accent is the purple the bar wears out of the box. Everything that
+-- was drawn in gold follows this one table.
+local GOLD = { 0.56, 0.45, 0.95 }
+local PANEL_BG = { 0.075, 0.078, 0.094 }
+local CARD_BG = { 0.113, 0.118, 0.141 }
+local FIELD_BG = { 0.145, 0.152, 0.180 }
+local TEXT_HI = { 0.90, 0.91, 0.94 }
+local TEXT_LO = { 0.58, 0.60, 0.67 }
 
+-- Flat panels: a solid fill and a one pixel edge, nothing else
 local DIALOG_BACKDROP = {
-    bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background-Dark",
-    edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
-    tile = true, tileSize = 32, edgeSize = 32,
-    insets = { left = 11, right = 12, top = 12, bottom = 11 },
+    bgFile = WHITE, edgeFile = WHITE, edgeSize = 1,
+    insets = { left = 1, right = 1, top = 1, bottom = 1 },
 }
-local BOX_BACKDROP = {
-    bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
-    edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-    tile = true, tileSize = 16, edgeSize = 16,
-    insets = { left = 4, right = 4, top = 4, bottom = 4 },
-}
+local BOX_BACKDROP = DIALOG_BACKDROP
 
--- The gothic font has no Cyrillic outside the Russian client: those
--- languages get a font that can show their letters
+-- The font of the interface has no Cyrillic outside the Russian client:
+-- those languages get a font that can show their letters
 local FONT_FALLBACK = "Fonts\\ARIALN.TTF"
 local fonts = {}
 
 local function MakeFont(name, size, outline)
     local font = CreateFont(name)
-    font:SetFont(FONT_GOTHIC, size, outline)
+    font:SetFont(FONT_UI, size, outline)
     font:SetShadowOffset(1, -1)
     font:SetShadowColor(0, 0, 0, 1)
     tinsert(fonts, { font = font, size = size, outline = outline })
     return font
 end
-local FontTitle = MakeFont("MyXPBarFontTitle", 30, "OUTLINE")
-local FontSection = MakeFont("MyXPBarFontSection", 17, "OUTLINE")
-local FontSmall = MakeFont("MyXPBarFontSmall", 13, "")
+local FontTitle = MakeFont("MyXPBarFontTitle", 15, "")
+local FontSection = MakeFont("MyXPBarFontSection", 12, "")
+local FontSmall = MakeFont("MyXPBarFontSmall", 11, "")
 
 function ns.ApplyFonts()
-    local path = ns.UsesLatinFont() and FONT_GOTHIC or FONT_FALLBACK
+    local path = ns.UsesLatinFont() and FONT_UI or FONT_FALLBACK
     for _, entry in ipairs(fonts) do
         pcall(entry.font.SetFont, entry.font, path, entry.size, entry.outline)
     end
@@ -153,60 +157,72 @@ panel:SetMovable(true)
 panel:SetClampedToScreen(true)
 panel:EnableMouse(true)
 panel:SetBackdrop(DIALOG_BACKDROP)
+panel:SetBackdropColor(PANEL_BG[1], PANEL_BG[2], PANEL_BG[3], 0.97)
+panel:SetBackdropBorderColor(0, 0, 0, 1)
 panel:Hide()
 tinsert(UISpecialFrames, "MyXPBarOptionsFrame") -- Escape closes the menu
 
--- Warm light at the top of the panel
-local topGlow = panel:CreateTexture(nil, "BACKGROUND", nil, 2)
-topGlow:SetPoint("TOPLEFT", 12, -12)
-topGlow:SetPoint("TOPRIGHT", -12, -12)
-topGlow:SetHeight(120)
-SetGradientSafe(topGlow, "VERTICAL", 0.55, 0.38, 0.1, 0, 0.3)
+-- Header: a slim bar across the top, the name on the left, the cross on the
+-- right. Dragging it moves the menu.
+local HEADER_H = 38
 
--- Header (drag to move the panel)
 local header = CreateFrame("Frame", nil, panel)
-header:SetPoint("TOPLEFT")
-header:SetPoint("TOPRIGHT")
-header:SetHeight(76)
+header:SetPoint("TOPLEFT", 1, -1)
+header:SetPoint("TOPRIGHT", -1, -1)
+header:SetHeight(HEADER_H)
 header:EnableMouse(true)
 header:SetScript("OnMouseDown", function() panel:StartMoving() end)
 header:SetScript("OnMouseUp", function() panel:StopMovingOrSizing() end)
 
--- Addon icon in a gold frame, sitting on the top border
-local crest = CreateFrame("Frame", nil, panel, "BackdropTemplate")
-crest:SetSize(48, 48)
-crest:SetPoint("CENTER", panel, "TOP", 0, -2)
-crest:SetFrameLevel(panel:GetFrameLevel() + 10)
-crest:SetBackdrop(BOX_BACKDROP)
-crest:SetBackdropColor(0, 0, 0, 1)
-crest:SetBackdropBorderColor(GOLD[1], GOLD[2], GOLD[3], 1)
-local crestIcon = crest:CreateTexture(nil, "ARTWORK")
-crestIcon:SetPoint("TOPLEFT", 5, -5)
-crestIcon:SetPoint("BOTTOMRIGHT", -5, 5)
+local headerBg = header:CreateTexture(nil, "BACKGROUND")
+headerBg:SetAllPoints()
+headerBg:SetColorTexture(CARD_BG[1], CARD_BG[2], CARD_BG[3], 1)
+
+-- The one line of accent in the whole header, under it
+local headerLine = header:CreateTexture(nil, "ARTWORK")
+headerLine:SetHeight(1)
+headerLine:SetPoint("BOTTOMLEFT")
+headerLine:SetPoint("BOTTOMRIGHT")
+headerLine:SetColorTexture(GOLD[1], GOLD[2], GOLD[3], 0.5)
+
+local crestIcon = header:CreateTexture(nil, "ARTWORK")
+crestIcon:SetSize(18, 18)
+crestIcon:SetPoint("LEFT", 12, 0)
 crestIcon:SetTexture(ICON)
 
-local title = panel:CreateFontString(nil, "OVERLAY")
+local title = header:CreateFontString(nil, "OVERLAY")
 title:SetFontObject(FontTitle)
 title:SetTextColor(GOLD[1], GOLD[2], GOLD[3])
-title:SetPoint("TOP", 0, -30)
+title:SetPoint("LEFT", crestIcon, "RIGHT", 8, 0)
 title:SetText("MyXPBar")
 
-local titleOrnament = Ornament(panel, 260)
-titleOrnament:SetPoint("TOP", title, "BOTTOM", 0, -4)
-
-local versionText = panel:CreateFontString(nil, "OVERLAY")
+local versionText = header:CreateFontString(nil, "OVERLAY")
 versionText:SetFontObject(FontSmall)
-versionText:SetTextColor(0.75, 0.68, 0.52)
-versionText:SetPoint("TOP", titleOrnament, "BOTTOM", 0, -4)
-versionText:SetText("v" .. VERSION .. "  ·  Options")
+versionText:SetTextColor(TEXT_LO[1], TEXT_LO[2], TEXT_LO[3])
+versionText:SetPoint("LEFT", title, "RIGHT", 8, -1)
+versionText:SetText("v" .. VERSION)
 
-local closeButton = CreateFrame("Button", nil, panel, "UIPanelCloseButton")
-closeButton:SetPoint("TOPRIGHT", -6, -6)
--- The header above spans the whole top of the panel, to drag it, at the very
--- same frame level: which of the two gets the click is up to the client. The
--- cross gets a level of its own, and closes the panel itself rather than
--- trusting what the template does.
+-- A cross of our own: the Blizzard one is a big stone button
+local closeButton = CreateFrame("Button", nil, header)
+closeButton:SetSize(22, 22)
+closeButton:SetPoint("RIGHT", -8, 0)
 closeButton:SetFrameLevel(header:GetFrameLevel() + 10)
+local closeGlow = closeButton:CreateTexture(nil, "BACKGROUND")
+closeGlow:SetAllPoints()
+closeGlow:SetColorTexture(0.85, 0.25, 0.3, 0)
+local closeX = closeButton:CreateFontString(nil, "OVERLAY")
+closeX:SetFontObject(FontSmall)
+closeX:SetPoint("CENTER", 0, 0)
+closeX:SetText("X")
+closeX:SetTextColor(TEXT_LO[1], TEXT_LO[2], TEXT_LO[3])
+closeButton:SetScript("OnEnter", function()
+    closeGlow:SetColorTexture(0.85, 0.25, 0.3, 0.8)
+    closeX:SetTextColor(1, 1, 1)
+end)
+closeButton:SetScript("OnLeave", function()
+    closeGlow:SetColorTexture(0.85, 0.25, 0.3, 0)
+    closeX:SetTextColor(TEXT_LO[1], TEXT_LO[2], TEXT_LO[3])
+end)
 closeButton:SetScript("OnClick", function() panel:Hide() end)
 
 -- A page is a frame holding its own widgets. They all sit at the same place
@@ -225,7 +241,23 @@ local pages = {}
 local content
 local cursorY = 0
 
+-- Every section is drawn inside a card: a darker box with a one pixel edge
+-- around the widgets that belong together. Its height is only known once
+-- the next section starts, or the page ends.
+local openCard
+
+local function CloseCard()
+    if not openCard then return end
+    local card = openCard.frame
+    card:ClearAllPoints()
+    card:SetPoint("TOPLEFT", content, "TOPLEFT", -CARD_PAD, openCard.top)
+    card:SetPoint("TOPRIGHT", content, "TOPRIGHT", CARD_PAD, openCard.top)
+    card:SetHeight(math.max(openCard.top - cursorY + CARD_PAD, 24))
+    openCard = nil
+end
+
 local function FinishColumn()
+    CloseCard()
     if content then content:SetHeight(math.max(-cursorY, 10)) end
 end
 
@@ -250,20 +282,38 @@ local currentPage = 1
 -- WIDGETS
 -- =========================================================
 local function Section(key)
-    cursorY = cursorY - 8
+    CloseCard()
+    cursorY = cursorY - 12
+
+    local card = CreateFrame("Frame", nil, content, "BackdropTemplate")
+    card:SetBackdrop(BOX_BACKDROP)
+    card:SetBackdropColor(CARD_BG[1], CARD_BG[2], CARD_BG[3], 1)
+    card:SetBackdropBorderColor(1, 1, 1, 0.09)
+    -- Under the widgets, which are children of the page like the card is
+    card:SetFrameLevel(math.max(content:GetFrameLevel(), 1))
+    openCard = { frame = card, top = cursorY }
+
+    cursorY = cursorY - 10
+
+    -- A short accent bar, then the name of the section
+    local mark = content:CreateTexture(nil, "ARTWORK")
+    mark:SetColorTexture(GOLD[1], GOLD[2], GOLD[3], 0.9)
+    mark:SetSize(2, 11)
+    mark:SetPoint("TOPLEFT", 0, cursorY - 1)
+
     local label = content:CreateFontString(nil, "OVERLAY")
     label:SetFontObject(FontSection)
-    label:SetTextColor(GOLD[1], GOLD[2], GOLD[3])
-    label:SetPoint("TOPLEFT", 0, cursorY)
+    label:SetTextColor(TEXT_HI[1], TEXT_HI[2], TEXT_HI[3])
+    label:SetPoint("TOPLEFT", 8, cursorY)
     Localize(label, key)
 
     local line = content:CreateTexture(nil, "ARTWORK")
     line:SetHeight(1)
-    line:SetPoint("TOPLEFT", label, "TOPRIGHT", 10, -9)
-    line:SetPoint("TOPRIGHT", content, "TOPLEFT", CONTENT_W, cursorY - 9)
-    SetGradientSafe(line, "HORIZONTAL", GOLD[1], GOLD[2], GOLD[3], 0.7, 0)
+    line:SetPoint("TOPLEFT", label, "TOPRIGHT", 10, -7)
+    line:SetPoint("TOPRIGHT", content, "TOPLEFT", CONTENT_W, cursorY - 7)
+    line:SetColorTexture(1, 1, 1, 0.07)
 
-    cursorY = cursorY - 26
+    cursorY = cursorY - 24
 end
 
 local function CreateSlider(key, minV, maxV, step, getValue, setValue, formatValue)
@@ -272,12 +322,24 @@ local function CreateSlider(key, minV, maxV, step, getValue, setValue, formatVal
     holder:SetPoint("TOPLEFT", 0, cursorY)
     cursorY = cursorY - 44
 
-    local label = holder:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    label:SetPoint("TOPLEFT")
+    local label = holder:CreateFontString(nil, "OVERLAY")
+    label:SetFontObject(FontSmall)
+    label:SetTextColor(TEXT_HI[1], TEXT_HI[2], TEXT_HI[3])
+    label:SetPoint("TOPLEFT", 0, -2)
     Localize(label, key)
 
-    local valueText = holder:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-    valueText:SetPoint("TOPRIGHT")
+    -- The number sits in a field of its own, on the right of the label
+    local valueBox = CreateFrame("Frame", nil, holder, "BackdropTemplate")
+    valueBox:SetSize(62, 18)
+    valueBox:SetPoint("TOPRIGHT", 0, 0)
+    valueBox:SetBackdrop(BOX_BACKDROP)
+    valueBox:SetBackdropColor(FIELD_BG[1], FIELD_BG[2], FIELD_BG[3], 1)
+    valueBox:SetBackdropBorderColor(1, 1, 1, 0.10)
+
+    local valueText = valueBox:CreateFontString(nil, "OVERLAY")
+    valueText:SetFontObject(FontSmall)
+    valueText:SetTextColor(TEXT_HI[1], TEXT_HI[2], TEXT_HI[3])
+    valueText:SetPoint("CENTER")
 
     local slider = CreateFrame("Slider", nil, holder)
     slider:SetOrientation("HORIZONTAL")
@@ -290,30 +352,24 @@ local function CreateSlider(key, minV, maxV, step, getValue, setValue, formatVal
     if slider.SetObeyStepDuringDrag then slider:SetObeyStepDuringDrag(true) end
     slider:SetHitRectInsets(0, 0, -4, -4)
 
-    -- Track: a thin engraved groove
+    -- Track: a flat dark rail
     local track = slider:CreateTexture(nil, "BACKGROUND")
-    track:SetColorTexture(0, 0, 0, 0.6)
-    track:SetHeight(6)
+    track:SetColorTexture(0.05, 0.052, 0.062, 1)
+    track:SetHeight(5)
     track:SetPoint("LEFT")
     track:SetPoint("RIGHT")
-    local trackEdge = slider:CreateTexture(nil, "BORDER")
-    trackEdge:SetColorTexture(GOLD[1], GOLD[2], GOLD[3], 0.25)
-    trackEdge:SetHeight(1)
-    trackEdge:SetPoint("BOTTOMLEFT", track, "BOTTOMLEFT", 0, -1)
-    trackEdge:SetPoint("BOTTOMRIGHT", track, "BOTTOMRIGHT", 0, -1)
 
     local thumb = slider:CreateTexture(nil, "OVERLAY")
     thumb:SetTexture(WHITE)
     thumb:SetVertexColor(GOLD[1], GOLD[2], GOLD[3])
-    thumb:SetSize(12, 12)
-    MakeRound(thumb)
+    thumb:SetSize(10, 14)
     slider:SetThumbTexture(thumb)
 
     local fill = slider:CreateTexture(nil, "ARTWORK")
-    fill:SetHeight(6)
+    fill:SetHeight(5)
     fill:SetPoint("LEFT", track, "LEFT")
     fill:SetPoint("RIGHT", thumb, "CENTER")
-    SetGradientSafe(fill, "HORIZONTAL", GOLD[1], GOLD[2], GOLD[3], 0.45, 0.95)
+    fill:SetColorTexture(GOLD[1], GOLD[2], GOLD[3], 0.85)
 
     local updating = false
     slider:SetScript("OnValueChanged", function(self, value)
@@ -326,8 +382,8 @@ local function CreateSlider(key, minV, maxV, step, getValue, setValue, formatVal
     slider:SetScript("OnMouseWheel", function(self, delta)
         self:SetValue(self:GetValue() + delta * step)
     end)
-    slider:SetScript("OnEnter", function() thumb:SetSize(14, 14) end)
-    slider:SetScript("OnLeave", function() thumb:SetSize(12, 12) end)
+    slider:SetScript("OnEnter", function() thumb:SetSize(12, 16) end)
+    slider:SetScript("OnLeave", function() thumb:SetSize(10, 14) end)
 
     tinsert(refreshers, function()
         updating = true
@@ -369,7 +425,9 @@ local function CreateColorRow(labelKey, key)
     row:SetPoint("TOPLEFT", 0, cursorY)
     cursorY = cursorY - 34
 
-    local label = row:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    local label = row:CreateFontString(nil, "OVERLAY")
+    label:SetFontObject(FontSmall)
+    label:SetTextColor(TEXT_HI[1], TEXT_HI[2], TEXT_HI[3])
     label:SetPoint("LEFT")
     Localize(label, labelKey)
 
@@ -386,8 +444,8 @@ local function CreateColorRow(labelKey, key)
         local dot = CreateFrame("Button", nil, row, "BackdropTemplate")
         dot:SetSize(20, 20)
         dot:SetPoint("LEFT", 122 + (i - 1) * 24, 0)
-        dot:SetBackdrop({ edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border", edgeSize = 10 })
-        dot:SetBackdropBorderColor(0.5, 0.42, 0.25, 1)
+        dot:SetBackdrop({ edgeFile = WHITE, edgeSize = 1 })
+        dot:SetBackdropBorderColor(1, 1, 1, 0.12)
 
         local swatch = dot:CreateTexture(nil, "ARTWORK")
         swatch:SetPoint("TOPLEFT", 3, -3)
@@ -403,7 +461,7 @@ local function CreateColorRow(labelKey, key)
             GameTooltip:Show()
         end)
         dot:SetScript("OnLeave", function(self)
-            self:SetBackdropBorderColor(self.selected and GOLD[1] or 0.5, self.selected and GOLD[2] or 0.42, self.selected and GOLD[3] or 0.25, 1)
+            self:SetBackdropBorderColor(self.selected and GOLD[1] or 1, self.selected and GOLD[2] or 1, self.selected and GOLD[3] or 1, self.selected and 1 or 0.12)
             GameTooltip:Hide()
         end)
         dot:SetScript("OnClick", function()
@@ -418,7 +476,7 @@ local function CreateColorRow(labelKey, key)
     custom:SetSize(36, 20)
     custom:SetPoint("RIGHT")
     custom:SetBackdrop(BOX_BACKDROP)
-    custom:SetBackdropColor(0, 0, 0, 1)
+    custom:SetBackdropColor(FIELD_BG[1], FIELD_BG[2], FIELD_BG[3], 1)
     custom:SetBackdropBorderColor(GOLD[1], GOLD[2], GOLD[3], 1)
     local customColor = custom:CreateTexture(nil, "ARTWORK")
     customColor:SetPoint("TOPLEFT", 5, -5)
@@ -445,7 +503,7 @@ local function CreateColorRow(labelKey, key)
             if dot.selected then
                 dot:SetBackdropBorderColor(GOLD[1], GOLD[2], GOLD[3], 1)
             else
-                dot:SetBackdropBorderColor(0.5, 0.42, 0.25, 1)
+                dot:SetBackdropBorderColor(1, 1, 1, 0.12)
             end
         end
     end)
@@ -460,20 +518,37 @@ local function CreateCheck(labelKey, descKey, getValue, setValue, wide)
         checkIndex = 0
     end
     local col = wide and 0 or (checkIndex % 2)
-    local check = CreateFrame("CheckButton", nil, content, "UICheckButtonTemplate")
-    check:SetSize(24, 24)
-    check:SetPoint("TOPLEFT", col * (CONTENT_W / 2), cursorY)
+    -- A small square of our own, instead of the round wooden box of the game
+    local check = CreateFrame("CheckButton", nil, content, "BackdropTemplate")
+    check:SetSize(16, 16)
+    check:SetPoint("TOPLEFT", col * (CONTENT_W / 2) + 1, cursorY - 3)
+    check:SetBackdrop(BOX_BACKDROP)
+    check:SetBackdropColor(FIELD_BG[1], FIELD_BG[2], FIELD_BG[3], 1)
+    check:SetBackdropBorderColor(1, 1, 1, 0.14)
     if wide or col == 1 then cursorY = cursorY - 28 end
     checkIndex = wide and 0 or (checkIndex + 1)
 
-    local templateText = check.Text or check.text
-    if templateText then templateText:SetText("") end
+    local tick = check:CreateTexture(nil, "OVERLAY")
+    tick:SetPoint("TOPLEFT", -2, 2)
+    tick:SetPoint("BOTTOMRIGHT", 2, -2)
+    tick:SetTexture("Interface\\Buttons\\UI-CheckBox-Check")
+    tick:SetVertexColor(GOLD[1], GOLD[2], GOLD[3])
+    check:SetCheckedTexture(tick)
 
-    local label = check:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    label:SetPoint("LEFT", check, "RIGHT", 2, 1)
-    label:SetWidth((wide and CONTENT_W or CONTENT_W / 2) - 30)
+    local label = check:CreateFontString(nil, "OVERLAY")
+    label:SetFontObject(FontSmall)
+    label:SetTextColor(TEXT_HI[1], TEXT_HI[2], TEXT_HI[3])
+    label:SetPoint("LEFT", check, "RIGHT", 7, 0)
+    label:SetWidth((wide and CONTENT_W or CONTENT_W / 2) - 32)
     label:SetJustifyH("LEFT")
     Localize(label, labelKey)
+
+    check:HookScript("OnEnter", function(self)
+        self:SetBackdropBorderColor(GOLD[1], GOLD[2], GOLD[3], 0.8)
+    end)
+    check:HookScript("OnLeave", function(self)
+        self:SetBackdropBorderColor(1, 1, 1, 0.14)
+    end)
 
     check:SetScript("OnClick", function(self)
         setValue(self:GetChecked() and true or false)
@@ -509,12 +584,63 @@ local function OptionCheck(labelKey, descKey, dbKey, onChange)
         end)
 end
 
-local function CreateButton(parent, labelKey, width, height, onClick)
-    local b = CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
+-- A flat button: a dark field, a one pixel edge, the accent on hover.
+-- Everything clickable in the menu is built from this, in place of the
+-- stone buttons of the game.
+local function SkinField(frame)
+    frame:SetBackdrop(BOX_BACKDROP)
+    frame:SetBackdropColor(FIELD_BG[1], FIELD_BG[2], FIELD_BG[3], 1)
+    frame:SetBackdropBorderColor(1, 1, 1, 0.10)
+end
+
+local function MakeFlatButton(parent, width, height)
+    local b = CreateFrame("Button", nil, parent, "BackdropTemplate")
     b:SetSize(width, height)
+    SkinField(b)
+
+    local fs = b:CreateFontString(nil, "OVERLAY")
+    fs:SetFontObject(FontSmall)
+    fs:SetPoint("CENTER", 0, 0)
+    fs:SetTextColor(TEXT_HI[1], TEXT_HI[2], TEXT_HI[3])
+    b:SetFontString(fs)
+    b.Text = fs
+
+    -- The page or the style in use stays lit: LockHighlight is ours here,
+    -- the template that used to answer it is gone
+    b.lit = b:CreateTexture(nil, "BACKGROUND")
+    b.lit:SetAllPoints()
+    b.lit:SetColorTexture(GOLD[1], GOLD[2], GOLD[3], 0.22)
+    b.lit:Hide()
+    function b:LockHighlight()
+        self.lit:Show()
+        self:SetBackdropBorderColor(GOLD[1], GOLD[2], GOLD[3], 0.9)
+    end
+    function b:UnlockHighlight()
+        self.lit:Hide()
+        self:SetBackdropBorderColor(1, 1, 1, 0.10)
+    end
+
+    b:HookScript("OnEnter", function(self)
+        if self.lit:IsShown() then return end
+        self:SetBackdropBorderColor(GOLD[1], GOLD[2], GOLD[3], 0.55)
+    end)
+    b:HookScript("OnLeave", function(self)
+        if self.lit:IsShown() then return end
+        self:SetBackdropBorderColor(1, 1, 1, 0.10)
+    end)
+    b:SetScript("OnDisable", function(self)
+        self.Text:SetTextColor(0.4, 0.41, 0.45)
+    end)
+    b:SetScript("OnEnable", function(self)
+        self.Text:SetTextColor(TEXT_HI[1], TEXT_HI[2], TEXT_HI[3])
+    end)
+    return b
+end
+
+local function CreateButton(parent, labelKey, width, height, onClick)
+    local b = MakeFlatButton(parent, width, height)
     b:SetText(T(labelKey))
-    local fs = b.Text or b.text or b:GetFontString()
-    if fs then Localize(fs, labelKey) end
+    Localize(b.Text, labelKey)
     b:SetScript("OnClick", function()
         PlayUISound("IG_MAINMENU_OPTION_CHECKBOX_ON")
         onClick()
@@ -542,8 +668,8 @@ local previewBox = CreateFrame("Frame", nil, content, "BackdropTemplate")
 previewBox:SetSize(CONTENT_W, 64)
 previewBox:SetPoint("TOPLEFT", 0, cursorY)
 previewBox:SetBackdrop(BOX_BACKDROP)
-previewBox:SetBackdropColor(0, 0, 0, 0.7)
-previewBox:SetBackdropBorderColor(0.6, 0.5, 0.28, 1)
+previewBox:SetBackdropColor(0.055, 0.058, 0.07, 1)
+previewBox:SetBackdropBorderColor(1, 1, 1, 0.09)
 cursorY = cursorY - 76
 
 local previewBg = previewBox:CreateTexture(nil, "BACKGROUND", nil, 2)
@@ -696,7 +822,7 @@ texButton.fill:SetPoint("BOTTOMRIGHT", -1, 1)
 texButton.edge = CreateFrame("Frame", nil, texButton, "BackdropTemplate")
 texButton.edge:SetAllPoints()
 texButton.edge:SetBackdrop({ edgeFile = WHITE, edgeSize = 1 })
-texButton.edge:SetBackdropBorderColor(GOLD[1], GOLD[2], GOLD[3], 0.8)
+texButton.edge:SetBackdropBorderColor(1, 1, 1, 0.12)
 texButton.label = texButton:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
 texButton.label:SetPoint("LEFT", 8, 0)
 texButton.label:SetShadowOffset(1, -1)
@@ -713,8 +839,8 @@ local texList = CreateFrame("Frame", "MyXPBarTextureList", UIParent, "BackdropTe
 texList:SetFrameStrata("FULLSCREEN_DIALOG")
 texList:SetToplevel(true)
 texList:SetBackdrop(BOX_BACKDROP)
-texList:SetBackdropColor(0, 0, 0, 0.95)
-texList:SetBackdropBorderColor(GOLD[1], GOLD[2], GOLD[3], 1)
+texList:SetBackdropColor(CARD_BG[1], CARD_BG[2], CARD_BG[3], 0.98)
+texList:SetBackdropBorderColor(GOLD[1], GOLD[2], GOLD[3], 0.6)
 texList:SetSize(TEX_W, 10 + #ns.TEXTURES * TEX_ROW)
 texList:SetPoint("TOPLEFT", texButton, "BOTTOMLEFT", 0, 0)
 texList:EnableMouse(true)
@@ -887,7 +1013,9 @@ cursorY = cursorY - 10
 StartFooter()
 
 -- Language: a drop-down list of every translation
-local langLabel = footer:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+local langLabel = footer:CreateFontString(nil, "OVERLAY")
+langLabel:SetFontObject(FontSmall)
+langLabel:SetTextColor(TEXT_LO[1], TEXT_LO[2], TEXT_LO[3])
 langLabel:SetPoint("TOPLEFT", 0, cursorY)
 Localize(langLabel, "LANGUAGE")
 
@@ -900,10 +1028,9 @@ local function ApplyLanguage(lang)
     ns.RefreshOptions()
 end
 
-local LANG_WIDTH = 150
-local langButton = CreateFrame("Button", nil, footer, "UIPanelButtonTemplate")
-langButton:SetSize(LANG_WIDTH, 22)
-langButton:SetPoint("TOPLEFT", 110, cursorY + 4)
+local LANG_WIDTH = 104
+local langButton = MakeFlatButton(footer, LANG_WIDTH, 22)
+langButton:SetPoint("TOPLEFT", 62, cursorY + 4)
 
 local langArrow = langButton:CreateTexture(nil, "OVERLAY")
 langArrow:SetSize(12, 12)
@@ -920,8 +1047,8 @@ local langList = CreateFrame("Frame", "MyXPBarLanguageList", UIParent, "Backdrop
 langList:SetFrameStrata("FULLSCREEN_DIALOG")
 langList:SetToplevel(true)
 langList:SetBackdrop(BOX_BACKDROP)
-langList:SetBackdropColor(0, 0, 0, 0.95)
-langList:SetBackdropBorderColor(GOLD[1], GOLD[2], GOLD[3], 1)
+langList:SetBackdropColor(CARD_BG[1], CARD_BG[2], CARD_BG[3], 0.98)
+langList:SetBackdropBorderColor(GOLD[1], GOLD[2], GOLD[3], 0.6)
 langList:SetSize(LANG_WIDTH, 10 + #ns.LANGUAGES * 20)
 -- No gap under the button: crossing it would close the list
 langList:SetPoint("TOPLEFT", langButton, "BOTTOMLEFT", 0, 0)
@@ -998,14 +1125,15 @@ local function ProfileChanged()
     ns.RefreshOptions()
 end
 
-local profileLabel = footer:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-profileLabel:SetPoint("TOPLEFT", 300, cursorY)
+local profileLabel = footer:CreateFontString(nil, "OVERLAY")
+profileLabel:SetFontObject(FontSmall)
+profileLabel:SetTextColor(TEXT_LO[1], TEXT_LO[2], TEXT_LO[3])
+profileLabel:SetPoint("TOPLEFT", 182, cursorY)
 Localize(profileLabel, "PROFILE")
 
-local PROFILE_WIDTH = 170
-local profileButton = CreateFrame("Button", nil, footer, "UIPanelButtonTemplate")
-profileButton:SetSize(PROFILE_WIDTH, 22)
-profileButton:SetPoint("TOPLEFT", 365, cursorY + 4)
+local PROFILE_WIDTH = 118
+local profileButton = MakeFlatButton(footer, PROFILE_WIDTH, 22)
+profileButton:SetPoint("TOPLEFT", 232, cursorY + 4)
 -- The tooltip also names the character the profile is given to
 profileButton:SetScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_TOP")
@@ -1030,8 +1158,8 @@ local profileList = CreateFrame("Frame", "MyXPBarProfileList", UIParent, "Backdr
 profileList:SetFrameStrata("FULLSCREEN_DIALOG")
 profileList:SetToplevel(true)
 profileList:SetBackdrop(BOX_BACKDROP)
-profileList:SetBackdropColor(0, 0, 0, 0.95)
-profileList:SetBackdropBorderColor(GOLD[1], GOLD[2], GOLD[3], 1)
+profileList:SetBackdropColor(CARD_BG[1], CARD_BG[2], CARD_BG[3], 0.98)
+profileList:SetBackdropBorderColor(GOLD[1], GOLD[2], GOLD[3], 0.6)
 profileList:SetWidth(PROFILE_WIDTH)
 profileList:SetPoint("TOPLEFT", profileButton, "BOTTOMLEFT", 0, 0)
 profileList:EnableMouse(true)
@@ -1179,17 +1307,17 @@ StaticPopupDialogs["MYXPBAR_DELETE_PROFILE"] = {
     OnCancel = function() deleting = nil end,
 }
 
-local newProfileBtn = CreateButton(footer, "PROFILE_NEW", 95, 22, function()
+local newProfileBtn = CreateButton(footer, "PROFILE_NEW", 76, 22, function()
     StaticPopup_Show("MYXPBAR_NEW_PROFILE", T("PROFILE_NEW_PROMPT"))
 end)
-newProfileBtn:SetPoint("TOPLEFT", 543, cursorY + 4)
+newProfileBtn:SetPoint("TOPLEFT", 362, cursorY + 4)
 Tip(newProfileBtn, "PROFILE_NEW", "PROFILE_NEW_DESC", "ANCHOR_TOP")
 
-local deleteProfileBtn = CreateButton(footer, "PROFILE_DELETE", 105, 22, function()
+local deleteProfileBtn = CreateButton(footer, "PROFILE_DELETE", 76, 22, function()
     deleting = ns.Profiles.Current()
     StaticPopup_Show("MYXPBAR_DELETE_PROFILE", string.format(T("PROFILE_DELETE_PROMPT"), deleting))
 end)
-deleteProfileBtn:SetPoint("TOPLEFT", 645, cursorY + 4)
+deleteProfileBtn:SetPoint("TOPLEFT", 446, cursorY + 4)
 Tip(deleteProfileBtn, "PROFILE_DELETE", "PROFILE_DELETE_DESC", "ANCHOR_TOP")
 
 tinsert(refreshers, function()
@@ -1206,9 +1334,12 @@ end)
 cursorY = cursorY - 34
 
 -- Footer
-local footerOrnament = Ornament(footer, FULL_W)
-footerOrnament:SetPoint("TOP", footer, "TOP", 0, cursorY)
-cursorY = cursorY - 18
+local footerLine = footer:CreateTexture(nil, "ARTWORK")
+footerLine:SetHeight(1)
+footerLine:SetColorTexture(1, 1, 1, 0.07)
+footerLine:SetPoint("TOPLEFT", 0, cursorY)
+footerLine:SetPoint("TOPRIGHT", footer, "TOPLEFT", FULL_W, cursorY)
+cursorY = cursorY - 16
 
 local BUTTON_Y = cursorY -- LayoutOptions places the row itself
 local BUTTON_GAP = 8
@@ -1236,7 +1367,9 @@ end)
 local footerButtons = { resetPosBtn, resetAllBtn }
 cursorY = cursorY - 70
 
-local hint = footer:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+local hint = footer:CreateFontString(nil, "OVERLAY")
+hint:SetFontObject(FontSmall)
+hint:SetTextColor(TEXT_LO[1], TEXT_LO[2], TEXT_LO[3])
 hint:SetPoint("TOP", footer, "TOP", 0, cursorY)
 hint:SetWidth(FULL_W)
 Localize(hint, "HINT")
@@ -1244,13 +1377,10 @@ cursorY = cursorY - 36
 
 local signature = footer:CreateFontString(nil, "OVERLAY")
 signature:SetFontObject(FontSmall)
-signature:SetTextColor(0.75, 0.62, 0.35)
+signature:SetTextColor(0.42, 0.43, 0.48)
 signature:SetPoint("TOP", footer, "TOP", 0, cursorY)
 signature:SetText(AUTHOR)
-local sigLeft = Diamond(panel, 5, "OVERLAY")
-sigLeft:SetPoint("RIGHT", signature, "LEFT", -8, 0)
-local sigRight = Diamond(panel, 5, "OVERLAY")
-sigRight:SetPoint("LEFT", signature, "RIGHT", 8, 0)
+
 cursorY = cursorY - 26
 
 FinishColumn()
@@ -1266,8 +1396,8 @@ local PAGE_ROW = 30
 local sidebar = CreateFrame("Frame", nil, panel, "BackdropTemplate")
 sidebar:SetSize(SIDE_W, 16 + #pages * PAGE_ROW)
 sidebar:SetBackdrop(BOX_BACKDROP)
-sidebar:SetBackdropColor(0, 0, 0, 0.4)
-sidebar:SetBackdropBorderColor(GOLD[1], GOLD[2], GOLD[3], 0.3)
+sidebar:SetBackdropColor(CARD_BG[1], CARD_BG[2], CARD_BG[3], 1)
+sidebar:SetBackdropBorderColor(1, 1, 1, 0.09)
 
 local function ShowPage(index)
     currentPage = index
@@ -1332,7 +1462,7 @@ function ns.LayoutOptions()
     local tallest = 0
     for _, page in ipairs(pages) do
         page.frame:ClearAllPoints()
-        page.frame:SetPoint("TOPLEFT", panel, "TOPLEFT", PAD + SIDE_W + GUTTER, CONTENT_TOP)
+        page.frame:SetPoint("TOPLEFT", panel, "TOPLEFT", PAD + SIDE_W + GUTTER + CARD_PAD, CONTENT_TOP)
         tallest = math.max(tallest, page.frame:GetHeight())
     end
     ShowPage(currentPage)
@@ -1409,6 +1539,8 @@ news:RegisterForDrag("LeftButton")
 news:SetScript("OnDragStart", news.StartMoving)
 news:SetScript("OnDragStop", news.StopMovingOrSizing)
 news:SetBackdrop(DIALOG_BACKDROP)
+news:SetBackdropColor(PANEL_BG[1], PANEL_BG[2], PANEL_BG[3], 0.97)
+news:SetBackdropBorderColor(GOLD[1], GOLD[2], GOLD[3], 0.5)
 news:Hide()
 tinsert(UISpecialFrames, "MyXPBarNewsFrame") -- Escape closes it
 

@@ -1,5 +1,19 @@
 # MyXPBar - Changelog
 
+## 4.3
+- **The options menu got the look it was missing.** Flat and dark, with a
+  slim bar at the top instead of the crest and the big gothic name, the
+  pages listed down the left in a panel of their own, and every section of
+  settings inside a card: a darker box with a one pixel edge. The checkboxes
+  are small squares, the buttons flat fields, the sliders a dark rail with a
+  purple fill and the number in a field on the right.
+- **Purple instead of gold.** Everything the menu used to draw in gold, from
+  the section titles to the colour swatches, follows the purple the bar
+  wears out of the box.
+- Nothing about the bar changed. Same styles, same textures, same settings,
+  same profiles: this is the window you set them in, not what you get on
+  screen.
+
 ## 4.2
 - **A new options menu.** The two columns of widgets are gone: the settings
   are sorted into five pages listed down the left side - the bar, the texts,
