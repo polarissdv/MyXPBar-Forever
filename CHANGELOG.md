@@ -1,5 +1,24 @@
 # MyXPBar - Changelog
 
+## 4.5
+- **The font list of 4.4 never opened.** It was built in the game's own
+  frame rather than in the menu, at a layer the client never put on screen,
+  and a timer closed it behind your back. It belongs to the menu now, sixty
+  layers above it, and it closes when you click elsewhere or pick a font.
+- **The cards no longer run under the bottom row.** A card kept its padding
+  but the page did not count it, so the last one of a page, the texture on
+  the first page, slid behind the language and profile line.
+- **The menu looks finished on a short page**: the pages are drawn on an
+  area of their own, a shade darker, and the list of pages runs the whole
+  height beside it instead of floating as a small box.
+- The cross at the top right is a square with an edge like every other
+  field, and turns red under the mouse. The two columns of checkboxes have
+  room to breathe.
+- Under the hood: `tools/` now holds a fake WoW client that loads the addon
+  outside the game, clicks every button, ticks every box and measures the
+  menu. The bug above would have been caught by it; from now on it runs
+  before a release.
+
 ## 4.4
 - **The separate rested strip is a measure of its own.** With the Split
   rested style it started where the XP bar ends and ran past it, which read

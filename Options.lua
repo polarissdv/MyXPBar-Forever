@@ -202,25 +202,29 @@ versionText:SetTextColor(TEXT_LO[1], TEXT_LO[2], TEXT_LO[3])
 versionText:SetPoint("LEFT", title, "RIGHT", 8, -1)
 versionText:SetText("v" .. VERSION)
 
--- A cross of our own: the Blizzard one is a big stone button
-local closeButton = CreateFrame("Button", nil, header)
-closeButton:SetSize(22, 22)
-closeButton:SetPoint("RIGHT", -8, 0)
+-- A cross of our own: the Blizzard one is a big stone button. A square
+-- with an edge, like every other field of the menu, so it does not look
+-- like a letter dropped in the corner.
+local closeButton = CreateFrame("Button", nil, header, "BackdropTemplate")
+closeButton:SetSize(20, 20)
+closeButton:SetPoint("RIGHT", -10, 0)
 closeButton:SetFrameLevel(header:GetFrameLevel() + 10)
-local closeGlow = closeButton:CreateTexture(nil, "BACKGROUND")
-closeGlow:SetAllPoints()
-closeGlow:SetColorTexture(0.85, 0.25, 0.3, 0)
+closeButton:SetBackdrop(BOX_BACKDROP)
+closeButton:SetBackdropColor(FIELD_BG[1], FIELD_BG[2], FIELD_BG[3], 1)
+closeButton:SetBackdropBorderColor(1, 1, 1, 0.10)
 local closeX = closeButton:CreateFontString(nil, "OVERLAY")
 closeX:SetFontObject(FontSmall)
 closeX:SetPoint("CENTER", 0, 0)
 closeX:SetText("X")
 closeX:SetTextColor(TEXT_LO[1], TEXT_LO[2], TEXT_LO[3])
-closeButton:SetScript("OnEnter", function()
-    closeGlow:SetColorTexture(0.85, 0.25, 0.3, 0.8)
+closeButton:SetScript("OnEnter", function(self)
+    self:SetBackdropColor(0.72, 0.22, 0.26, 1)
+    self:SetBackdropBorderColor(0.85, 0.3, 0.34, 1)
     closeX:SetTextColor(1, 1, 1)
 end)
-closeButton:SetScript("OnLeave", function()
-    closeGlow:SetColorTexture(0.85, 0.25, 0.3, 0)
+closeButton:SetScript("OnLeave", function(self)
+    self:SetBackdropColor(FIELD_BG[1], FIELD_BG[2], FIELD_BG[3], 1)
+    self:SetBackdropBorderColor(1, 1, 1, 0.10)
     closeX:SetTextColor(TEXT_LO[1], TEXT_LO[2], TEXT_LO[3])
 end)
 closeButton:SetScript("OnClick", function() panel:Hide() end)
@@ -253,6 +257,9 @@ local function CloseCard()
     card:SetPoint("TOPLEFT", content, "TOPLEFT", -CARD_PAD, openCard.top)
     card:SetPoint("TOPRIGHT", content, "TOPRIGHT", CARD_PAD, openCard.top)
     card:SetHeight(math.max(openCard.top - cursorY + CARD_PAD, 24))
+    -- The page is as tall as its cards, padding included: without this the
+    -- last card of a page ran under the footer
+    cursorY = cursorY - CARD_PAD
     openCard = nil
 end
 
@@ -521,7 +528,7 @@ local function CreateCheck(labelKey, descKey, getValue, setValue, wide)
     -- A small square of our own, instead of the round wooden box of the game
     local check = CreateFrame("CheckButton", nil, content, "BackdropTemplate")
     check:SetSize(16, 16)
-    check:SetPoint("TOPLEFT", col * (CONTENT_W / 2) + 1, cursorY - 3)
+    check:SetPoint("TOPLEFT", col * (CONTENT_W / 2 + 6), cursorY - 3)
     check:SetBackdrop(BOX_BACKDROP)
     check:SetBackdropColor(FIELD_BG[1], FIELD_BG[2], FIELD_BG[3], 1)
     check:SetBackdropBorderColor(1, 1, 1, 0.14)
@@ -539,7 +546,7 @@ local function CreateCheck(labelKey, descKey, getValue, setValue, wide)
     label:SetFontObject(FontSmall)
     label:SetTextColor(TEXT_HI[1], TEXT_HI[2], TEXT_HI[3])
     label:SetPoint("LEFT", check, "RIGHT", 7, 0)
-    label:SetWidth((wide and CONTENT_W or CONTENT_W / 2) - 32)
+    label:SetWidth((wide and CONTENT_W or CONTENT_W / 2) - 38)
     label:SetJustifyH("LEFT")
     Localize(label, labelKey)
 
@@ -952,17 +959,29 @@ fontArrow:SetTexture(WHITE)
 fontArrow:SetVertexColor(GOLD[1], GOLD[2], GOLD[3])
 fontArrow:SetRotation(math.rad(45))
 
--- Like the other lists: in UIParent, or the panel would cover it
-local fontList = CreateFrame("Frame", "MyXPBarFontList", UIParent, "BackdropTemplate")
-fontList:SetFrameStrata("FULLSCREEN_DIALOG")
-fontList:SetToplevel(true)
+-- The list belongs to the panel and sits sixty levels above it, instead of
+-- floating in UIParent at another strata: that is what kept it from ever
+-- showing up in game, and a level inside the panel cannot be covered.
+local fontCatcher = CreateFrame("Button", nil, panel)
+fontCatcher:SetAllPoints(panel)
+fontCatcher:SetFrameLevel(panel:GetFrameLevel() + 55)
+fontCatcher:Hide()
+
+local fontList = CreateFrame("Frame", "MyXPBarFontList", panel, "BackdropTemplate")
+fontList:SetFrameLevel(panel:GetFrameLevel() + 60)
 fontList:SetBackdrop(BOX_BACKDROP)
 fontList:SetBackdropColor(CARD_BG[1], CARD_BG[2], CARD_BG[3], 0.98)
 fontList:SetBackdropBorderColor(GOLD[1], GOLD[2], GOLD[3], 0.6)
-fontList:SetPoint("TOPLEFT", fontButton, "BOTTOMLEFT", 0, 0)
+fontList:SetPoint("TOPLEFT", fontButton, "BOTTOMLEFT", 0, -2)
 fontList:EnableMouse(true)
 fontList:EnableMouseWheel(true)
 fontList:Hide()
+
+local function CloseFontList()
+    fontList:Hide()
+    fontCatcher:Hide()
+end
+fontCatcher:SetScript("OnClick", CloseFontList)
 
 local function FillFontRows()
     local shown = math.min(#fontEntries, FONT_ROWS)
@@ -985,7 +1004,7 @@ local function FillFontRows()
             row:SetScript("OnEnter", function(self) self.highlight:Show() end)
             row:SetScript("OnLeave", function(self) self.highlight:Hide() end)
             row:SetScript("OnClick", function(self)
-                fontList:Hide()
+                CloseFontList()
                 if ns.db.font == self.id then return end
                 PlayUISound("IG_MAINMENU_OPTION_CHECKBOX_ON")
                 ns.db.font = self.id
@@ -1012,7 +1031,7 @@ end)
 fontButton:SetScript("OnClick", function()
     PlayUISound("IG_MAINMENU_OPTION_CHECKBOX_ON")
     if fontList:IsShown() then
-        fontList:Hide()
+        CloseFontList()
         return
     end
     fontEntries = ns.FontList()
@@ -1021,22 +1040,11 @@ fontButton:SetScript("OnClick", function()
         if entry.id == ns.db.font then fontOffset = i - 1 end
     end
     FillFontRows()
+    fontCatcher:Show()
     fontList:Show()
 end)
 
--- Closes a short moment after the mouse left both the button and the list
-local FONT_GRACE = 0.6
-local fontAway = 0
-fontList:SetScript("OnShow", function() fontAway = 0 end)
-fontList:SetScript("OnUpdate", function(self, elapsed)
-    if self:IsMouseOver(4, -4, -4, 4) or fontButton:IsMouseOver(4, -4, -4, 4) then
-        fontAway = 0
-        return
-    end
-    fontAway = fontAway + elapsed
-    if fontAway > FONT_GRACE then self:Hide() end
-end)
-panel:HookScript("OnHide", function() fontList:Hide() end)
+panel:HookScript("OnHide", CloseFontList)
 
 tinsert(refreshers, function()
     local entry = ns.FontEntry(ns.db.font)
@@ -1507,6 +1515,14 @@ sidebar:SetBackdrop(BOX_BACKDROP)
 sidebar:SetBackdropColor(CARD_BG[1], CARD_BG[2], CARD_BG[3], 1)
 sidebar:SetBackdropBorderColor(1, 1, 1, 0.09)
 
+-- The area the pages are drawn on, a shade darker than the menu: a short
+-- page then reads as a quiet area instead of cards floating in a hole
+local contentPanel = CreateFrame("Frame", nil, panel, "BackdropTemplate")
+contentPanel:SetBackdrop(BOX_BACKDROP)
+contentPanel:SetBackdropColor(0.055, 0.058, 0.070, 1)
+contentPanel:SetBackdropBorderColor(1, 1, 1, 0.07)
+contentPanel:SetFrameLevel(math.max(panel:GetFrameLevel(), 1))
+
 local function ShowPage(index)
     currentPage = index
     for i, page in ipairs(pages) do
@@ -1575,8 +1591,13 @@ function ns.LayoutOptions()
     end
     ShowPage(currentPage)
 
-    -- The menu is as tall as its tallest page: changing page moves nothing
-    local contentHeight = math.max(tallest, sidebar:GetHeight())
+    -- The menu is as tall as its tallest page: changing page moves nothing,
+    -- and the list of pages runs all the way down beside it
+    local contentHeight = math.max(tallest, 16 + #pages * PAGE_ROW)
+    sidebar:SetHeight(contentHeight)
+    contentPanel:ClearAllPoints()
+    contentPanel:SetPoint("TOPLEFT", panel, "TOPLEFT", PAD + SIDE_W + GUTTER, CONTENT_TOP)
+    contentPanel:SetSize(CONTENT_W + CARD_PAD * 2, contentHeight)
     footer:SetWidth(FULL_W)
     footer:SetPoint("TOPLEFT", panel, "TOPLEFT", PAD, CONTENT_TOP - contentHeight - GAP)
 
@@ -1632,7 +1653,7 @@ end
 -- =========================================================
 -- Shown once after an update, and on /mxp news. The lines are translated like
 -- everything else: one key per line, rewritten with each release.
-local NEWS_LINES = { "NEWS_1", "NEWS_2", "NEWS_3" }
+local NEWS_LINES = { "NEWS_1", "NEWS_2", "NEWS_3", "NEWS_4" }
 local NEWS_W = 420
 
 local news = CreateFrame("Frame", "MyXPBarNewsFrame", UIParent, "BackdropTemplate")
