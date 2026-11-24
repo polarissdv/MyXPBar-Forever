@@ -138,9 +138,9 @@ print(string.format("frames built: %d   event frames: %d   clicks: %d (%d boxes)
     #stub.frames, loaded, clicked, ticked))
 
 if #failures == 0 then
-    print("no error")
+    print("RESULT ok: no error")
 else
     print(string.format("%d problem(s):", #failures))
     for _, line in ipairs(failures) do print("  - " .. line) end
+    print("RESULT fail")
 end
-os.exit(#failures == 0 and 0 or 1)

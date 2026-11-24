@@ -18,15 +18,16 @@ root = os.path.dirname(here)
 os.chdir(root)
 
 runtime = lupa.LuaRuntime(unpack_returned_tuples=True)
-runtime.execute('os.exit = function(code) error({ exit = code or 0 }, 0) end')
+printed = []
+runtime.globals().print = lambda *parts: printed.append(' '.join(str(p) for p in parts))
 source = io.open(os.path.join(here, 'simulate.lua'), encoding='utf-8').read()
 chunk = runtime.eval('function(src, dir) return load(src, "simulate")(dir) end')
 try:
     chunk(source, here.replace(os.sep, '/'))
 except lupa.LuaError as error:
-    text = str(error)
-    if 'exit = 0' in text or 'exit' not in text:
-        pass
-    print(text)
-    sys.exit(0 if 'exit = 0' in text else 1)
-sys.exit(0)
+    print('the run itself blew up: %s' % error)
+    sys.exit(1)
+
+for line in printed:
+    print(line)
+sys.exit(0 if any(line.startswith('RESULT ok') for line in printed) else 1)

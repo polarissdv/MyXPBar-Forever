@@ -1628,7 +1628,7 @@ end
 -- =========================================================
 -- Shown once after an update, and on /mxp news. The lines are translated like
 -- everything else: one key per line, rewritten with each release.
-local NEWS_LINES = { "NEWS_1", "NEWS_2", "NEWS_3", "NEWS_4" }
+local NEWS_LINES = { "NEWS_1", "NEWS_2", "NEWS_3" }
 local NEWS_W = 420
 
 local news = CreateFrame("Frame", "MyXPBarNewsFrame", UIParent, "BackdropTemplate")

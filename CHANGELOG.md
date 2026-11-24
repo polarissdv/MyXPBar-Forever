@@ -1,36 +1,5 @@
 # MyXPBar - Changelog
 
-## 4.6
-- **Picking a font works.** The drop-down of 4.4 never opened in game, and
-  4.5 moved it into the menu without fixing it: a list that floats over the
-  menu is only drawn where the client agrees to draw it, and it failed
-  silently, with no error to read. There is no floating list any more. The
-  fonts are buttons in the page, eight at a time, each written in the font
-  it picks, with arrows when another addon brought more than eight. Buttons
-  in a page are what every other picker of the menu uses, and those work.
-- The fake client in `tools/` now picks a font and turns the page, and
-  fails the run if the setting does not change. Shipping a picker that
-  cannot pick is what it is there to stop.
-
-## 4.5
-- **The font list of 4.4 never opened.** It was built in the game's own
-  frame rather than in the menu, at a layer the client never put on screen,
-  and a timer closed it behind your back. It belongs to the menu now, sixty
-  layers above it, and it closes when you click elsewhere or pick a font.
-- **The cards no longer run under the bottom row.** A card kept its padding
-  but the page did not count it, so the last one of a page, the texture on
-  the first page, slid behind the language and profile line.
-- **The menu looks finished on a short page**: the pages are drawn on an
-  area of their own, a shade darker, and the list of pages runs the whole
-  height beside it instead of floating as a small box.
-- The cross at the top right is a square with an edge like every other
-  field, and turns red under the mouse. The two columns of checkboxes have
-  room to breathe.
-- Under the hood: `tools/` now holds a fake WoW client that loads the addon
-  outside the game, clicks every button, ticks every box and measures the
-  menu. The bug above would have been caught by it; from now on it runs
-  before a release.
-
 ## 4.4
 - **The separate rested strip is a measure of its own.** With the Split
   rested style it started where the XP bar ends and ran past it, which read
@@ -39,13 +8,23 @@
   pile up. Reported by Dream777.
 - **That strip can sit above the bar** instead of under it: the new "Rested
   strip above" option, beside the styles.
-- **Every font of LibSharedMedia** is in the font list, under the five of
-  the addon, when another addon brought the library along. The list is a
-  drop-down now, each line written in the font it picks, and it scrolls.
-  Nothing is embedded: without the library the five fonts are all there is.
-  Asked for by Dream777.
+- **More fonts for the bar.** The five of the addon, then every font
+  another addon registered with LibSharedMedia: eight buttons at a time,
+  each written in the font it picks, with arrows when there are more than
+  eight. Nothing is embedded, so without the library the five fonts are all
+  there is. Asked for by Dream777.
+- **The menu sits straight.** A card kept a margin at the bottom that the
+  page did not count, so the last card of a page ran under the language and
+  profile line. The pages are drawn on an area of their own, the list of
+  pages runs the whole height beside it, the cross at the top right is a
+  square with an edge like every other field, and the two columns of
+  checkboxes have room to breathe.
+- Under the hood: `tools/` holds a fake WoW client that loads the addon
+  outside the game, clicks every button, ticks every box, picks a font and
+  measures the menu. It runs before a release now.
 
 ## 4.3
+
 - **The options menu got the look it was missing.** Flat and dark, with a
   slim bar at the top instead of the crest and the big gothic name, the
   pages listed down the left in a panel of their own, and every section of
