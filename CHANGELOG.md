@@ -1,5 +1,17 @@
 # MyXPBar - Changelog
 
+## 4.6
+- **Picking a font works.** The drop-down of 4.4 never opened in game, and
+  4.5 moved it into the menu without fixing it: a list that floats over the
+  menu is only drawn where the client agrees to draw it, and it failed
+  silently, with no error to read. There is no floating list any more. The
+  fonts are buttons in the page, eight at a time, each written in the font
+  it picks, with arrows when another addon brought more than eight. Buttons
+  in a page are what every other picker of the menu uses, and those work.
+- The fake client in `tools/` now picks a font and turns the page, and
+  fails the run if the setting does not change. Shipping a picker that
+  cannot pick is what it is there to stop.
+
 ## 4.5
 - **The font list of 4.4 never opened.** It was built in the game's own
   frame rather than in the menu, at a layer the client never put on screen,

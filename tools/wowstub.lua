@@ -175,7 +175,17 @@ function stub.Install(G)
         GetAddOnMetadata = function(_, field) return field == "Version" and "test" or "" end,
         IsAddOnLoaded = function() return false end,
     }
-    G.LibStub = nil -- No LibSharedMedia in this run
+    -- LibSharedMedia, as another addon would have registered it, with
+    -- enough fonts that the picker has to paginate
+    local shared = { "Accidental Presidency", "Continuum Medium", "Expressway",
+        "Myriad Condensed Web", "PT Sans Narrow", "Roboto", "Emblem", "Homespun",
+        "Prototype", "Skurri Clone", "Friz Clone", "Movatif", "Oswald", "Lato",
+        "Inter", "Noto Sans", "Fira Sans", "Cabin" }
+    local lsm = {
+        List = function(_, kind) return kind == "font" and shared or {} end,
+        Fetch = function(_, kind, name) return "Fonts/" .. tostring(name) .. ".ttf" end,
+    }
+    G.LibStub = function(name, silent) return name == "LibSharedMedia-3.0" and lsm or nil end
     G.DEFAULT_CHAT_FRAME = { AddMessage = function() end }
     G.SlashCmdList = {}
     G.hooksecurefunc = function() end

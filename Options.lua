@@ -929,129 +929,104 @@ end)
 -- font it picks. Four of the game's own, so there is no file to ship.
 StartPage("PAGE_TEXT")
 Section("SECTION_FONT")
--- A drop-down of every font: the five of the addon, then the ones another
--- addon registered with LibSharedMedia, if any addon brought the library.
--- Each line is written in the font it picks, and the list scrolls when it
--- holds more than fits.
-local FONT_ROW, FONT_ROWS = 22, 12
-local fontEntries, fontOffset = {}, 0
-local fontRows = {}
+-- Eight buttons, each written in the font it picks, and arrows when there
+-- are more than eight: the fonts another addon registered with
+-- LibSharedMedia come after the five of the addon.
+--
+-- This used to be a drop-down. A list that floats over the menu is drawn
+-- by the client only if its strata, its level and its parent all agree,
+-- and in game it never showed up: nothing opened, with no error to read.
+-- Buttons sitting in the page have none of that to get wrong.
+local FONT_PER_PAGE, FONT_COLS = 8, 2
+local fontEntries, fontPage, fontPaged = {}, 0, false
+local fontButtons = {}
 
 local function FontLabel(entry)
     return entry.name or T(entry.key)
 end
 
 local function PaintFontText(fontString, entry, size)
-    if entry.file then
-        if pcall(fontString.SetFont, fontString, entry.file, size, entry.flags or "") then return end
+    if entry.file and pcall(fontString.SetFont, fontString, entry.file, size, entry.flags or "") then
+        return
     end
     fontString:SetFontObject(FontSmall)
 end
 
-local fontButton = MakeFlatButton(content, CONTENT_W, 24)
-fontButton:SetPoint("TOPLEFT", 0, cursorY)
-cursorY = cursorY - 32
+local RefreshFonts
 
-local fontArrow = fontButton:CreateTexture(nil, "OVERLAY")
-fontArrow:SetSize(7, 7)
-fontArrow:SetPoint("RIGHT", -8, 0)
-fontArrow:SetTexture(WHITE)
-fontArrow:SetVertexColor(GOLD[1], GOLD[2], GOLD[3])
-fontArrow:SetRotation(math.rad(45))
-
--- The list belongs to the panel and sits sixty levels above it, instead of
--- floating in UIParent at another strata: that is what kept it from ever
--- showing up in game, and a level inside the panel cannot be covered.
-local fontCatcher = CreateFrame("Button", nil, panel)
-fontCatcher:SetAllPoints(panel)
-fontCatcher:SetFrameLevel(panel:GetFrameLevel() + 55)
-fontCatcher:Hide()
-
-local fontList = CreateFrame("Frame", "MyXPBarFontList", panel, "BackdropTemplate")
-fontList:SetFrameLevel(panel:GetFrameLevel() + 60)
-fontList:SetBackdrop(BOX_BACKDROP)
-fontList:SetBackdropColor(CARD_BG[1], CARD_BG[2], CARD_BG[3], 0.98)
-fontList:SetBackdropBorderColor(GOLD[1], GOLD[2], GOLD[3], 0.6)
-fontList:SetPoint("TOPLEFT", fontButton, "BOTTOMLEFT", 0, -2)
-fontList:EnableMouse(true)
-fontList:EnableMouseWheel(true)
-fontList:Hide()
-
-local function CloseFontList()
-    fontList:Hide()
-    fontCatcher:Hide()
+for i = 1, FONT_PER_PAGE do
+    local b = MakeFlatButton(content, CONTENT_W / FONT_COLS - 6, 24)
+    b:SetPoint("TOPLEFT", ((i - 1) % FONT_COLS) * (CONTENT_W / FONT_COLS),
+        cursorY - math.floor((i - 1) / FONT_COLS) * 28)
+    b:SetScript("OnClick", function(self)
+        if not self.id or self.id == ns.db.font then return end
+        PlayUISound("IG_MAINMENU_OPTION_CHECKBOX_ON")
+        ns.db.font = self.id
+        ns.Refresh()
+        ns.RefreshOptions()
+    end)
+    fontButtons[i] = b
 end
-fontCatcher:SetScript("OnClick", CloseFontList)
+cursorY = cursorY - 28 * (FONT_PER_PAGE / FONT_COLS) - 2
 
-local function FillFontRows()
-    local shown = math.min(#fontEntries, FONT_ROWS)
-    fontOffset = math.max(0, math.min(fontOffset, #fontEntries - shown))
-    fontList:SetSize(CONTENT_W, 10 + shown * FONT_ROW)
-    for i = 1, shown do
-        local row = fontRows[i]
-        if not row then
-            row = CreateFrame("Button", nil, fontList)
-            row:SetSize(CONTENT_W - 10, FONT_ROW - 2)
-            row:SetPoint("TOPLEFT", 5, -5 - (i - 1) * FONT_ROW)
-            row.highlight = row:CreateTexture(nil, "BACKGROUND")
-            row.highlight:SetAllPoints()
-            row.highlight:SetColorTexture(GOLD[1], GOLD[2], GOLD[3], 0.22)
-            row.highlight:Hide()
-            row.text = row:CreateFontString(nil, "OVERLAY")
-            row.text:SetPoint("LEFT", 8, 0)
-            row.text:SetPoint("RIGHT", -8, 0)
-            row.text:SetJustifyH("LEFT")
-            row:SetScript("OnEnter", function(self) self.highlight:Show() end)
-            row:SetScript("OnLeave", function(self) self.highlight:Hide() end)
-            row:SetScript("OnClick", function(self)
-                CloseFontList()
-                if ns.db.font == self.id then return end
-                PlayUISound("IG_MAINMENU_OPTION_CHECKBOX_ON")
-                ns.db.font = self.id
-                ns.Refresh()
-                ns.RefreshOptions()
-            end)
-            fontRows[i] = row
-        end
-        local entry = fontEntries[i + fontOffset]
-        row.id = entry.id
-        row.text:SetText(FontLabel(entry))
-        PaintFontText(row.text, entry, 13)
-        row.text:SetTextColor(1, 1, 1, entry.id == ns.db.font and 1 or 0.78)
-        row:Show()
-    end
-    for i = shown + 1, #fontRows do fontRows[i]:Hide() end
+-- The arrows, shown only when the fonts do not fit on one page
+local fontPrev = MakeFlatButton(content, 26, 20)
+fontPrev:SetPoint("TOPLEFT", 0, cursorY)
+fontPrev:SetText("<")
+local fontNext = MakeFlatButton(content, 26, 20)
+fontNext:SetPoint("TOPLEFT", 32, cursorY)
+fontNext:SetText(">")
+
+local fontCount = content:CreateFontString(nil, "OVERLAY")
+fontCount:SetFontObject(FontSmall)
+fontCount:SetTextColor(TEXT_LO[1], TEXT_LO[2], TEXT_LO[3])
+fontCount:SetPoint("TOPRIGHT", CONTENT_W, cursorY - 4)
+cursorY = cursorY - 26
+
+local function FontPages()
+    return math.max(1, math.ceil(#fontEntries / FONT_PER_PAGE))
 end
 
-fontList:SetScript("OnMouseWheel", function(self, delta)
-    fontOffset = fontOffset - delta
-    FillFontRows()
-end)
-
-fontButton:SetScript("OnClick", function()
+local function TurnFontPage(step)
+    fontPaged = true
+    fontPage = (fontPage + step) % FontPages()
     PlayUISound("IG_MAINMENU_OPTION_CHECKBOX_ON")
-    if fontList:IsShown() then
-        CloseFontList()
-        return
-    end
+    RefreshFonts()
+end
+fontPrev:SetScript("OnClick", function() TurnFontPage(-1) end)
+fontNext:SetScript("OnClick", function() TurnFontPage(1) end)
+
+function RefreshFonts()
     fontEntries = ns.FontList()
-    -- Open on the font in use, so a long list does not start from the top
-    for i, entry in ipairs(fontEntries) do
-        if entry.id == ns.db.font then fontOffset = i - 1 end
+    local pages = FontPages()
+
+    -- Open on the page holding the font in use, until the arrows are used
+    if not fontPaged then
+        for i, entry in ipairs(fontEntries) do
+            if entry.id == ns.db.font then fontPage = math.floor((i - 1) / FONT_PER_PAGE) end
+        end
     end
-    FillFontRows()
-    fontCatcher:Show()
-    fontList:Show()
-end)
+    if fontPage >= pages then fontPage = pages - 1 end
 
-panel:HookScript("OnHide", CloseFontList)
+    for i, button in ipairs(fontButtons) do
+        local entry = fontEntries[fontPage * FONT_PER_PAGE + i]
+        if entry then
+            button.id = entry.id
+            button:SetText(FontLabel(entry))
+            PaintFontText(button.Text, entry, 12)
+            if entry.id == ns.db.font then button:LockHighlight() else button:UnlockHighlight() end
+            button:Show()
+        else
+            button.id = nil
+            button:Hide()
+        end
+    end
 
-tinsert(refreshers, function()
-    local entry = ns.FontEntry(ns.db.font)
-    fontButton:SetText(FontLabel(entry))
-    PaintFontText(fontButton.Text, entry, 13)
-    if fontList:IsShown() then FillFontRows() end
-end)
+    fontPrev:SetShown(pages > 1)
+    fontNext:SetShown(pages > 1)
+    fontCount:SetText(pages > 1 and string.format("%d / %d", fontPage + 1, pages) or "")
+end
+tinsert(refreshers, RefreshFonts)
 
 Section("SECTION_TEXTS")
 -- The size every text of the bar is multiplied by, kept as a percentage

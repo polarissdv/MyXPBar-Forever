@@ -80,19 +80,37 @@ for _, frame in ipairs(stub.frames) do
     end
 end
 
--- The font list must answer a click with rows to pick from
-local fontList = _G.MyXPBarFontList
-if not fontList then
-    table.insert(failures, "the font list does not exist")
+-- Picking a font must really change the setting
+local fontButton
+for _, frame in ipairs(stub.frames) do
+    if frame.__text == "Skurri" and frame.__scripts and frame.__scripts.OnClick then
+        fontButton = frame
+    end
+end
+if not fontButton then
+    table.insert(failures, "no button offers the Skurri font: the font picker is missing")
 else
-    local rows = 0
-    for _, child in ipairs(fontList.__children or {}) do
-        if child.__type == "Button" then rows = rows + 1 end
+    ns.db.font = "default"
+    Try("the font buttons", ns.RefreshOptions)
+    stub.Fire(fontButton, "OnClick")
+    if ns.db.font ~= "skurri" then
+        table.insert(failures, "clicking a font changed nothing: font is still " ..
+            tostring(ns.db.font))
+    else
+        print("picking a font works: font = " .. tostring(ns.db.font))
     end
-    if rows == 0 then
-        table.insert(failures, "the font list opens on nothing: no row was built")
-    end
-    print(string.format("font list: %d rows, shown=%s", rows, tostring(fontList.__shown)))
+    ns.db.font = "default"
+end
+
+-- With the shared fonts of the stub there are more than one page of them
+local pager
+for _, frame in ipairs(stub.frames) do
+    if frame.__text == ">" and frame.__scripts and frame.__scripts.OnClick then pager = frame end
+end
+if not pager then
+    table.insert(failures, "no arrow to reach the fonts past the first page")
+else
+    Try("turning the font page", function() stub.Fire(pager, "OnClick") end)
 end
 
 -- What the menu ends up measuring, so a page that runs past the window
