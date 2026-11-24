@@ -41,12 +41,40 @@ ns.FONTS = {
     { id = "skurri", key = "FONT_SKURRI", file = "Fonts\\skurri.ttf" },
 }
 
+-- Every font another addon registered with LibSharedMedia, if any addon
+-- brought the library along. Nothing is embedded: without it the five
+-- fonts above are all there is.
+local function SharedMedia()
+    if not LibStub then return nil end
+    local ok, lib = pcall(LibStub, "LibSharedMedia-3.0", true)
+    return ok and lib or nil
+end
+
+-- The five fonts of the addon, then the shared ones, named "lsm:<name>"
+function ns.FontList()
+    local list = {}
+    for _, entry in ipairs(ns.FONTS) do tinsert(list, entry) end
+    local lib = SharedMedia()
+    if not lib then return list end
+    for _, name in ipairs(lib:List("font") or {}) do
+        local file = lib:Fetch("font", name, true)
+        if file then
+            tinsert(list, { id = "lsm:" .. name, name = name, file = file, shared = true })
+        end
+    end
+    return list
+end
+
 -- Arial Narrow is the only one sure to have the letters of every language
 function ns.FontEntry(id)
     if not ns.UsesLatinFont() then return ns.FONTS[3] end
     for _, entry in ipairs(ns.FONTS) do
         if entry.id == id then return entry end
     end
+    local name = type(id) == "string" and id:match("^lsm:(.+)$")
+    local lib = name and SharedMedia()
+    local file = lib and lib:Fetch("font", name, true)
+    if file then return { id = id, name = name, file = file, shared = true } end
     return ns.FONTS[1]
 end
 
@@ -86,6 +114,7 @@ ns.defaults = {
     smooth = true,     -- Animated bar fill
     showGains = true,  -- Floating "+245 XP"
     style = "classic", -- classic | gold | segments | thin | spark | restedbar
+    restedAbove = false, -- The separate rested strip over the bar, not under
     texture = "default", -- Bar texture, see ns.TEXTURES
     font = "default",    -- Font of every text of the bar, see ns.FONTS
     fullWidth = false,   -- Stretch from one screen edge to the other (width is ignored)
@@ -408,15 +437,25 @@ spark:SetBlendMode("ADD")
 spark:SetWidth(8)
 spark:Hide()
 
--- Separate rested bar under the main one (style "restedbar")
+-- Separate rested bar, over or under the main one (style "restedbar").
+-- It is a measure of its own: full means the rested XP the game lets you
+-- pile up, a level and a half. It used to run from the end of the XP bar
+-- like the layer it replaces, which read as a second XP bar.
+local RESTED_CAP = 1.5 -- Levels of rested XP the game stops at
+
 local underRested = CreateFrame("StatusBar", nil, mainFrame)
 underRested:SetStatusBarTexture(BAR_TEXTURE)
-underRested:SetPoint("TOPLEFT", mainFrame, "BOTTOMLEFT", 0, -2)
-underRested:SetPoint("TOPRIGHT", mainFrame, "BOTTOMRIGHT", 0, -2)
 underRested:SetHeight(4)
 underRested:Hide()
 local underBg = underRested:CreateTexture(nil, "BACKGROUND")
 underBg:SetAllPoints()
+
+-- rested: the XP banked, maxXP: what this level needs
+local function UpdateRestedStrip(rested, maxXP)
+    local cap = math.max(maxXP * RESTED_CAP, 1)
+    underRested:SetMinMaxValues(0, cap)
+    underRested:SetValue(math.min(rested, cap))
+end
 
 local function UpdateSpark(fraction)
     if not spark:IsShown() then return end
@@ -556,7 +595,7 @@ local function AnchorBottomTexts()
     local below, gap = mainFrame, -5
     if repStrip:IsShown() and not repBeside then
         below, gap = repStrip, -3
-    elseif underRested:IsShown() then
+    elseif underRested:IsShown() and not ns.db.restedAbove then
         below, gap = underRested, -3
     end
     subText:ClearAllPoints()
@@ -784,6 +823,14 @@ function ns.ApplyLayout()
     -- The rested layer lives either on top of the bar, or in its own strip
     restedBar:SetShown(style ~= "restedbar")
     underRested:SetShown(style == "restedbar")
+    underRested:ClearAllPoints()
+    if db.restedAbove then
+        underRested:SetPoint("BOTTOMLEFT", mainFrame, "TOPLEFT", 0, 2)
+        underRested:SetPoint("BOTTOMRIGHT", mainFrame, "TOPRIGHT", 0, 2)
+    else
+        underRested:SetPoint("TOPLEFT", mainFrame, "BOTTOMLEFT", 0, -2)
+        underRested:SetPoint("TOPRIGHT", mainFrame, "BOTTOMRIGHT", 0, -2)
+    end
 
     -- Reputation strip: beside the bar, or under it (and under the rested
     -- strip if any). Full width leaves no room on the side.
@@ -802,7 +849,7 @@ function ns.ApplyLayout()
             repStrip:SetPoint("TOPLEFT", mainFrame, "TOPRIGHT", 4, 0)
         end
     else
-        local above = (style == "restedbar") and underRested or mainFrame
+        local above = (style == "restedbar" and not db.restedAbove) and underRested or mainFrame
         stripHeight = math.max(8, math.floor(db.height * 0.4))
         stripWidth = width
         repStrip:SetHeight(stripHeight)
@@ -848,7 +895,6 @@ local RenderXPTexts
 local function DrawBars()
     xpBar:SetValue(anim.value)
     restedBar:SetValue(anim.rested)
-    underRested:SetValue(anim.rested)
     UpdateSpark(anim.value / anim.max)
 end
 
@@ -856,7 +902,6 @@ local function SetBarRange(maxXP)
     anim.max = maxXP
     xpBar:SetMinMaxValues(0, maxXP)
     restedBar:SetMinMaxValues(0, maxXP)
-    underRested:SetMinMaxValues(0, maxXP)
 end
 
 -- The bar animates itself, and stops as soon as it reached its target.
@@ -1229,6 +1274,7 @@ local function UpdateStatus()
     -- 3. Visual update of bars. A level up fills the bar to the end before
     -- the new level starts, as long as the XP of the old level is known.
     local levelUpFrom = levelChanged and ns.db.smooth and ns.XPPerLevel()[level - 1] or nil
+    UpdateRestedStrip(rested, maxXP)
     SetBarValues(currXP, math.min(currXP + rested, maxXP), maxXP,
         levelChanged and not levelUpFrom, levelUpFrom)
 

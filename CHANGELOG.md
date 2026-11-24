@@ -1,5 +1,19 @@
 # MyXPBar - Changelog
 
+## 4.4
+- **The separate rested strip is a measure of its own.** With the Split
+  rested style it started where the XP bar ends and ran past it, which read
+  as a second XP bar and told you nothing. It fills with the rested XP you
+  actually have now: full means a level and a half, all the game lets you
+  pile up. Reported by Dream777.
+- **That strip can sit above the bar** instead of under it: the new "Rested
+  strip above" option, beside the styles.
+- **Every font of LibSharedMedia** is in the font list, under the five of
+  the addon, when another addon brought the library along. The list is a
+  drop-down now, each line written in the font it picks, and it scrolls.
+  Nothing is embedded: without the library the five fonts are all there is.
+  Asked for by Dream777.
+
 ## 4.3
 - **The options menu got the look it was missing.** Flat and dark, with a
   slim bar at the top instead of the crest and the big gothic name, the

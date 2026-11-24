@@ -801,6 +801,11 @@ tinsert(refreshers, function()
     end
 end)
 
+EndChecks()
+OptionCheck("RESTED_ABOVE", "RESTED_ABOVE_DESC", "restedAbove")
+EndChecks()
+cursorY = cursorY - 10
+
 -- Bar texture: a drop-down showing each texture under its name. Same shape
 -- as the language one at the bottom of the menu, including the list living
 -- in UIParent (the panel is toplevel and would cover it, eating the clicks).
@@ -917,24 +922,127 @@ end)
 -- font it picks. Four of the game's own, so there is no file to ship.
 StartPage("PAGE_TEXT")
 Section("SECTION_FONT")
-local fontButtons = {}
-for i, entry in ipairs(ns.FONTS) do
-    local b = CreateButton(content, entry.key, CONTENT_W / 2 - 6, 24, function()
-        ns.db.font = entry.id
-        ns.Refresh()
-        ns.RefreshOptions()
-    end)
-    b:SetPoint("TOPLEFT", ((i - 1) % 2) * (CONTENT_W / 2), cursorY - math.floor((i - 1) / 2) * 28)
-    local fs = b.Text or b.text or b:GetFontString()
-    if fs and entry.file then pcall(fs.SetFont, fs, entry.file, 13, entry.flags or "") end
-    b.id = entry.id
-    fontButtons[i] = b
+-- A drop-down of every font: the five of the addon, then the ones another
+-- addon registered with LibSharedMedia, if any addon brought the library.
+-- Each line is written in the font it picks, and the list scrolls when it
+-- holds more than fits.
+local FONT_ROW, FONT_ROWS = 22, 12
+local fontEntries, fontOffset = {}, 0
+local fontRows = {}
+
+local function FontLabel(entry)
+    return entry.name or T(entry.key)
 end
-cursorY = cursorY - 28 * math.ceil(#ns.FONTS / 2) - 6
-tinsert(refreshers, function()
-    for _, b in ipairs(fontButtons) do
-        if b.id == ns.db.font then b:LockHighlight() else b:UnlockHighlight() end
+
+local function PaintFontText(fontString, entry, size)
+    if entry.file then
+        if pcall(fontString.SetFont, fontString, entry.file, size, entry.flags or "") then return end
     end
+    fontString:SetFontObject(FontSmall)
+end
+
+local fontButton = MakeFlatButton(content, CONTENT_W, 24)
+fontButton:SetPoint("TOPLEFT", 0, cursorY)
+cursorY = cursorY - 32
+
+local fontArrow = fontButton:CreateTexture(nil, "OVERLAY")
+fontArrow:SetSize(7, 7)
+fontArrow:SetPoint("RIGHT", -8, 0)
+fontArrow:SetTexture(WHITE)
+fontArrow:SetVertexColor(GOLD[1], GOLD[2], GOLD[3])
+fontArrow:SetRotation(math.rad(45))
+
+-- Like the other lists: in UIParent, or the panel would cover it
+local fontList = CreateFrame("Frame", "MyXPBarFontList", UIParent, "BackdropTemplate")
+fontList:SetFrameStrata("FULLSCREEN_DIALOG")
+fontList:SetToplevel(true)
+fontList:SetBackdrop(BOX_BACKDROP)
+fontList:SetBackdropColor(CARD_BG[1], CARD_BG[2], CARD_BG[3], 0.98)
+fontList:SetBackdropBorderColor(GOLD[1], GOLD[2], GOLD[3], 0.6)
+fontList:SetPoint("TOPLEFT", fontButton, "BOTTOMLEFT", 0, 0)
+fontList:EnableMouse(true)
+fontList:EnableMouseWheel(true)
+fontList:Hide()
+
+local function FillFontRows()
+    local shown = math.min(#fontEntries, FONT_ROWS)
+    fontOffset = math.max(0, math.min(fontOffset, #fontEntries - shown))
+    fontList:SetSize(CONTENT_W, 10 + shown * FONT_ROW)
+    for i = 1, shown do
+        local row = fontRows[i]
+        if not row then
+            row = CreateFrame("Button", nil, fontList)
+            row:SetSize(CONTENT_W - 10, FONT_ROW - 2)
+            row:SetPoint("TOPLEFT", 5, -5 - (i - 1) * FONT_ROW)
+            row.highlight = row:CreateTexture(nil, "BACKGROUND")
+            row.highlight:SetAllPoints()
+            row.highlight:SetColorTexture(GOLD[1], GOLD[2], GOLD[3], 0.22)
+            row.highlight:Hide()
+            row.text = row:CreateFontString(nil, "OVERLAY")
+            row.text:SetPoint("LEFT", 8, 0)
+            row.text:SetPoint("RIGHT", -8, 0)
+            row.text:SetJustifyH("LEFT")
+            row:SetScript("OnEnter", function(self) self.highlight:Show() end)
+            row:SetScript("OnLeave", function(self) self.highlight:Hide() end)
+            row:SetScript("OnClick", function(self)
+                fontList:Hide()
+                if ns.db.font == self.id then return end
+                PlayUISound("IG_MAINMENU_OPTION_CHECKBOX_ON")
+                ns.db.font = self.id
+                ns.Refresh()
+                ns.RefreshOptions()
+            end)
+            fontRows[i] = row
+        end
+        local entry = fontEntries[i + fontOffset]
+        row.id = entry.id
+        row.text:SetText(FontLabel(entry))
+        PaintFontText(row.text, entry, 13)
+        row.text:SetTextColor(1, 1, 1, entry.id == ns.db.font and 1 or 0.78)
+        row:Show()
+    end
+    for i = shown + 1, #fontRows do fontRows[i]:Hide() end
+end
+
+fontList:SetScript("OnMouseWheel", function(self, delta)
+    fontOffset = fontOffset - delta
+    FillFontRows()
+end)
+
+fontButton:SetScript("OnClick", function()
+    PlayUISound("IG_MAINMENU_OPTION_CHECKBOX_ON")
+    if fontList:IsShown() then
+        fontList:Hide()
+        return
+    end
+    fontEntries = ns.FontList()
+    -- Open on the font in use, so a long list does not start from the top
+    for i, entry in ipairs(fontEntries) do
+        if entry.id == ns.db.font then fontOffset = i - 1 end
+    end
+    FillFontRows()
+    fontList:Show()
+end)
+
+-- Closes a short moment after the mouse left both the button and the list
+local FONT_GRACE = 0.6
+local fontAway = 0
+fontList:SetScript("OnShow", function() fontAway = 0 end)
+fontList:SetScript("OnUpdate", function(self, elapsed)
+    if self:IsMouseOver(4, -4, -4, 4) or fontButton:IsMouseOver(4, -4, -4, 4) then
+        fontAway = 0
+        return
+    end
+    fontAway = fontAway + elapsed
+    if fontAway > FONT_GRACE then self:Hide() end
+end)
+panel:HookScript("OnHide", function() fontList:Hide() end)
+
+tinsert(refreshers, function()
+    local entry = ns.FontEntry(ns.db.font)
+    fontButton:SetText(FontLabel(entry))
+    PaintFontText(fontButton.Text, entry, 13)
+    if fontList:IsShown() then FillFontRows() end
 end)
 
 Section("SECTION_TEXTS")
@@ -1524,7 +1632,7 @@ end
 -- =========================================================
 -- Shown once after an update, and on /mxp news. The lines are translated like
 -- everything else: one key per line, rewritten with each release.
-local NEWS_LINES = { "NEWS_1", "NEWS_2", "NEWS_3", "NEWS_4", "NEWS_5", "NEWS_6" }
+local NEWS_LINES = { "NEWS_1", "NEWS_2", "NEWS_3" }
 local NEWS_W = 420
 
 local news = CreateFrame("Frame", "MyXPBarNewsFrame", UIParent, "BackdropTemplate")
